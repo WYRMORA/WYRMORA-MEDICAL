@@ -53,4 +53,78 @@ router.post('/',adminWriteLimit,async(req,res,next)=>{try{
  ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,nepali_name=EXCLUDED.nepali_name,category=EXCLUDED.category,forms=EXCLUDED.forms,use_description=EXCLUDED.use_description,symptoms=EXCLUDED.symptoms,caution=EXCLUDED.caution,side_effects=EXCLUDED.side_effects,prescription_status=EXCLUDED.prescription_status,price_npr=EXCLUDED.price_npr,price_note=EXCLUDED.price_note,source=EXCLUDED.source,price_verified=EXCLUDED.price_verified,price_updated_at=CASE WHEN EXCLUDED.price_npr IS NULL THEN NULL ELSE NOW() END,updated_at=NOW() RETURNING *`,[id,d.name,d.nepali,d.category,d.forms,d.use,d.symptoms,d.caution,d.side,d.prescription,d.price??null,d.priceNote,d.source,priceVerified]);
  res.status(201).json({item:map(rows[0])});
 }catch(e){next(e)}});
+
+const verificationSchema = z.object({
+  status: z.enum(['pending', 'under_review', 'verified']),
+  pharmacistName: z.string().trim().min(2).max(160).optional(),
+  registration: z.string().trim().min(2).max(100).optional(),
+  notes: z.string().trim().max(2000).optional().default(''),
+  reviewConfirmed: z.boolean().optional().default(false)
+});
+
+router.patch('/:id/verification', adminWriteLimit, async (req, res, next) => {
+  try {
+    const secret = process.env.MEDICINE_ADMIN_KEY;
+    const supplied = req.get('x-admin-key') || '';
+    const a = Buffer.from(String(secret || ''));
+    const b = Buffer.from(String(supplied));
+
+    const keyMatches = Boolean(
+      secret && supplied &&
+      a.length === b.length &&
+      timingSafeEqual(a, b)
+    );
+
+    if (!keyMatches) {
+      return res.status(403).json({ error: 'Admin key गलत छ।' });
+    }
+
+    const parsed = verificationSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: 'Verification विवरण जाँच गर्नुहोस्।'
+      });
+    }
+
+    const d = parsed.data;
+
+    if (
+      d.status === 'verified' &&
+      (!d.pharmacistName || !d.registration || !d.reviewConfirmed)
+    ) {
+      return res.status(400).json({
+        error: 'Verified गर्न Pharmacist को नाम, registration र वास्तविक समीक्षा पुष्टि आवश्यक छ।'
+      });
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE medicines
+       SET verification_status = $2,
+           verified_by = CASE WHEN $2 = 'verified' THEN $3 ELSE NULL END,
+           pharmacist_registration = CASE WHEN $2 = 'verified' THEN $4 ELSE NULL END,
+           verified_at = CASE WHEN $2 = 'verified' THEN NOW() ELSE NULL END,
+           verification_notes = $5,
+           updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [
+        req.params.id,
+        d.status,
+        d.pharmacistName || null,
+        d.registration || null,
+        d.notes
+      ]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: 'औषधि भेटिएन।' });
+    }
+
+    res.json({ item: map(rows[0]) });
+  } catch (e) {
+    next(e);
+  }
+});
+
 export default router;
