@@ -1,0 +1,16 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { pool } from '../src/db.js';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+try {
+  for (const file of ['001_init.sql','002_medical.sql']) {
+    const sql = await fs.readFile(path.join(here, '../migrations', file), 'utf8');
+    await pool.query(sql);
+    console.log(`${file} applied.`);
+  }
+} catch (err) {
+  console.error('Migration failed:', err.message);
+  process.exitCode = 1;
+} finally { await pool.end(); }
