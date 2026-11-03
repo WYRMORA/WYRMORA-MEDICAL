@@ -30,10 +30,24 @@ const schema = z.object({
   source: z.string().trim().min(3).max(1000)
 });
 
+
 const verificationSchema = z.object({
   status: z.enum(['pending', 'under_review', 'verified']),
-  pharmacistName: z.string().trim().min(2).max(160).optional(),
-  registration: z.string().trim().min(2).max(100).optional(),
+
+  pharmacistName: z.preprocess(
+    value => typeof value === 'string' && value.trim() === ''
+      ? undefined
+      : value,
+    z.string().trim().min(2).max(160).optional()
+  ),
+
+  registration: z.preprocess(
+    value => typeof value === 'string' && value.trim() === ''
+      ? undefined
+      : value,
+    z.string().trim().min(2).max(100).optional()
+  ),
+
   notes: z.string().trim().max(2000).optional().default(''),
   reviewConfirmed: z.boolean().optional().default(false)
 });
