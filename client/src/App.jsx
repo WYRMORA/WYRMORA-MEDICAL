@@ -1,22 +1,26 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
+import './App.css';
+
+const API = '/api/medicines';
 
 const starter = [
   {
-    id: 'paracetamol',
-    name: 'Paracetamol',
-    nepali: 'प्यारासिटामोल',
-    category: 'दुखाइ तथा ज्वरो',
-    forms: 'ट्याब्लेट, सिरप, ड्रप',
-    use: 'ज्वरो घटाउन र हल्का देखि मध्यम दुखाइ कम गर्न प्रयोग गरिन्छ।',
-    symptoms: 'टाउको दुखाइ, दाँत दुखाइ, शरीर दुखाइ र ज्वरो',
-    caution: 'कलेजोसम्बन्धी समस्या वा अन्य paracetamol भएको औषधि प्रयोग गरिरहनुभएको छ भने स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।',
-    side: 'वाकवाकी, एलर्जी वा दुर्लभ अवस्थामा कलेजोमा गम्भीर असर हुन सक्छ।',
-    prescription: 'उत्पादन र formulation अनुसार फरक पर्न सक्छ।',
+    id: 'amoxicillin',
+    name: 'Amoxicillin',
+    nepali: 'एमोक्सिसिलिन',
+    category: 'एन्टिबायोटिक',
+    forms: 'क्याप्सुल, ट्याब्लेट, सस्पेन्सन',
+    use: 'केही ब्याक्टेरियाबाट हुने संक्रमणको उपचारमा चिकित्सकले प्रयोग गराउने एन्टिबायोटिक हो।',
+    symptoms: 'संक्रमणको प्रकारअनुसार चिकित्सकले प्रयोगको निर्णय गर्छन्।',
+    caution: 'Penicillin allergy भए स्वास्थ्यकर्मीलाई जानकारी दिनुहोस्। चिकित्सकको सल्लाहबिना प्रयोग नगर्नुहोस्।',
+    side: 'पखाला, वाकवाकी, छालामा डाबर वा एलर्जी हुन सक्छ।',
+    prescription: 'प्रिस्क्रिप्सन आवश्यक',
     price: null,
     priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
     source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false
+    priceVerified: false,
+    verificationStatus: 'pending'
   },
   {
     id: 'azithromycin',
@@ -24,31 +28,16 @@ const starter = [
     nepali: 'एजिथ्रोमाइसिन',
     category: 'एन्टिबायोटिक',
     forms: 'ट्याब्लेट, सस्पेन्सन',
-    use: 'संवेदनशील ब्याक्टेरियाबाट हुने केही संक्रमणमा चिकित्सकले प्रयोग गराउने macrolide समूहको एन्टिबायोटिक हो।',
+    use: 'संवेदनशील ब्याक्टेरियाबाट हुने केही संक्रमणमा चिकित्सकले प्रयोग गराउने एन्टिबायोटिक हो।',
     symptoms: 'संक्रमणको प्रकारअनुसार चिकित्सकले प्रयोगको निर्णय गर्छन्।',
-    caution: 'चिकित्सकको सल्लाहबिना प्रयोग नगर्नुहोस्। एन्टिबायोटिकको पूरा उपचार योजना पालना गर्नुहोस्।',
+    caution: 'चिकित्सकको सल्लाहबिना प्रयोग नगर्नुहोस्।',
     side: 'पखाला, वाकवाकी, पेट दुख्ने वा एलर्जी हुन सक्छ।',
-    prescription: 'प्रिस्क्रिप्सन आवश्यक।',
+    prescription: 'प्रिस्क्रिप्सन आवश्यक',
     price: null,
     priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
     source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false
-  },
-  {
-    id: 'amoxicillin',
-    name: 'Amoxicillin',
-    nepali: 'एमोक्सिसिलिन',
-    category: 'एन्टिबायोटिक',
-    forms: 'क्याप्सुल, ट्याब्लेट, सस्पेन्सन',
-    use: 'केही ब्याक्टेरियाबाट हुने संक्रमणको उपचारमा चिकित्सकले प्रयोग गराउने penicillin समूहको एन्टिबायोटिक हो।',
-    symptoms: 'कान, छाती, घाँटी वा अन्य ब्याक्टेरियल संक्रमण।',
-    caution: 'भाइरसका कारण हुने रुघाखोकी वा फ्लुमा काम गर्दैन। Penicillin allergy भए स्वास्थ्यकर्मीलाई जानकारी दिनुहोस्।',
-    side: 'पखाला, वाकवाकी, छालामा डाबर; गम्भीर एलर्जी भए तुरुन्त उपचार लिनुहोस्।',
-    prescription: 'प्रिस्क्रिप्सन आवश्यक।',
-    price: null,
-    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
-    source: 'सामान्य औषधि जानकारी; एन्टिबायोटिकको प्रयोग चिकित्सकको निर्णयमा।',
-    priceVerified: false
+    priceVerified: false,
+    verificationStatus: 'pending'
   },
   {
     id: 'cetirizine',
@@ -57,14 +46,15 @@ const starter = [
     category: 'एलर्जी',
     forms: 'ट्याब्लेट, सिरप',
     use: 'एलर्जीका लक्षण कम गर्न प्रयोग हुने antihistamine औषधि हो।',
-    symptoms: 'छिँक आउने, नाक वा आँखा चिलाउने, पानी बग्ने र छालामा चिलाउने डाबर।',
-    caution: 'निद्रा लाग्न सक्छ। गाडी चलाउँदा सावधानी अपनाउनुहोस्। गर्भावस्था, स्तनपान वा मिर्गौलाको समस्या भए सल्लाह लिनुहोस्।',
-    side: 'निद्रा लाग्ने, मुख सुक्ने, थकान वा टाउको दुख्ने।',
-    prescription: 'स्थानीय उत्पादनको लेबल वा फार्मासिस्टबाट पुष्टि गर्नुहोस्।',
+    symptoms: 'छिँक आउने, नाक वा आँखा चिलाउने र छालामा चिलाउने डाबर।',
+    caution: 'निद्रा लाग्न सक्छ। गाडी चलाउँदा सावधानी अपनाउनुहोस्।',
+    side: 'निद्रा लाग्ने, मुख सुक्ने वा थकान हुन सक्छ।',
+    prescription: 'उत्पादनअनुसार पुष्टि गर्नुहोस्।',
     price: null,
     priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
     source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false
+    priceVerified: false,
+    verificationStatus: 'pending'
   },
   {
     id: 'ibuprofen',
@@ -73,30 +63,32 @@ const starter = [
     category: 'दुखाइ तथा सुन्निने समस्या',
     forms: 'ट्याब्लेट, सस्पेन्सन',
     use: 'दुखाइ, ज्वरो र सूजन कम गर्न प्रयोग हुने NSAID औषधि हो।',
-    symptoms: 'मांसपेशी वा जोर्नी दुखाइ, महिनावारी दुखाइ र केही प्रकारका सूजन।',
-    caution: 'पेटको अल्सर, रक्तस्राव, मिर्गौला वा मुटुको समस्या तथा गर्भावस्थामा जोखिम हुन सक्छ। स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।',
-    side: 'पेट दुख्ने, अपच, वाकवाकी; गम्भीर अवस्थामा पेटबाट रक्तस्राव वा मिर्गौलामा असर।',
+    symptoms: 'मांसपेशी वा जोर्नी दुखाइ र महिनावारी दुखाइ।',
+    caution: 'पेटको अल्सर, रक्तस्राव, मिर्गौला वा मुटुको समस्या भए स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।',
+    side: 'पेट दुख्ने, अपच, वाकवाकी वा गम्भीर अवस्थामा रक्तस्राव हुन सक्छ।',
     prescription: 'उत्पादन र शक्तिअनुसार फरक पर्न सक्छ।',
     price: null,
     priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
     source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false
+    priceVerified: false,
+    verificationStatus: 'pending'
   },
   {
     id: 'metformin',
     name: 'Metformin',
     nepali: 'मेटफर्मिन',
-    category: 'मधुमेह तथा हर्मोनसम्बन्धी समस्या',
+    category: 'मधुमेह',
     forms: 'ट्याब्लेट',
     use: 'टाइप २ मधुमेहमा रगतमा चिनीको मात्रा नियन्त्रण गर्न प्रयोग गरिने औषधि हो।',
     symptoms: 'टाइप २ मधुमेहमा चिकित्सकले आवश्यक ठानेमा प्रयोग गरिन्छ।',
-    caution: 'मिर्गौलाको समस्या वा गम्भीर बिरामी अवस्था भए चिकित्सकलाई जानकारी दिनुहोस्। आफैं औषधि सुरु वा बन्द नगर्नुहोस्।',
-    side: 'पखाला, वाकवाकी, पेट असहज हुने; दुर्लभ रूपमा गम्भीर समस्या हुन सक्छ।',
+    caution: 'मिर्गौलाको समस्या भए चिकित्सकलाई जानकारी दिनुहोस्। आफैं औषधि सुरु वा बन्द नगर्नुहोस्।',
+    side: 'पखाला, वाकवाकी वा पेट असहज हुन सक्छ।',
     prescription: 'चिकित्सकको सल्लाह आवश्यक।',
     price: null,
     priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
     source: 'सामान्य औषधि जानकारी; चिकित्सकको सल्लाह आवश्यक।',
-    priceVerified: false
+    priceVerified: false,
+    verificationStatus: 'pending'
   },
   {
     id: 'omeprazole',
@@ -105,14 +97,15 @@ const starter = [
     category: 'पेटको अम्ल',
     forms: 'क्याप्सुल, ट्याब्लेट',
     use: 'पेटमा बन्ने अम्ल घटाउने proton pump inhibitor औषधि हो।',
-    symptoms: 'अम्लपित्त, GERD तथा पेट वा आन्द्राका केही अल्सरमा चिकित्सकले सिफारिस गर्न सक्छन्।',
-    caution: 'लामो समय आफैं प्रयोग नगर्नुहोस्। रगत बान्ता, कालो दिसा वा निल्न गाह्रो भए जाँच गराउनुहोस्।',
-    side: 'टाउको दुख्ने, पेट दुख्ने, वाकवाकी, पखाला वा कब्जियत।',
-    prescription: 'निदान र उत्पादनअनुसार स्वास्थ्यकर्मीको सल्लाह आवश्यक हुन सक्छ।',
+    symptoms: 'अम्लपित्त, GERD तथा केही प्रकारका अल्सरमा चिकित्सकले सिफारिस गर्न सक्छन्।',
+    caution: 'लामो समय आफैं प्रयोग नगर्नुहोस्। रगत बान्ता वा कालो दिसा भए तुरुन्त जाँच गराउनुहोस्।',
+    side: 'टाउको दुख्ने, पेट दुख्ने, वाकवाकी वा पखाला हुन सक्छ।',
+    prescription: 'स्वास्थ्यकर्मीसँग पुष्टि गर्नुहोस्।',
     price: null,
     priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
     source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false
+    priceVerified: false,
+    verificationStatus: 'pending'
   },
   {
     id: 'ors',
@@ -128,7 +121,25 @@ const starter = [
     price: null,
     priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
     source: 'सामान्य स्वास्थ्य जानकारी; प्याकेटको निर्देशन प्राथमिक।',
-    priceVerified: false
+    priceVerified: false,
+    verificationStatus: 'pending'
+  },
+  {
+    id: 'paracetamol',
+    name: 'Paracetamol',
+    nepali: 'प्यारासिटामोल',
+    category: 'दुखाइ तथा ज्वरो',
+    forms: 'ट्याब्लेट, सिरप, ड्रप',
+    use: 'ज्वरो घटाउन र हल्का देखि मध्यम दुखाइ कम गर्न प्रयोग गरिन्छ।',
+    symptoms: 'टाउको दुखाइ, दाँत दुखाइ, शरीर दुखाइ र ज्वरो।',
+    caution: 'कलेजोसम्बन्धी समस्या वा अन्य paracetamol भएको औषधि प्रयोग गरिरहनुभएको छ भने स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।',
+    side: 'एलर्जी वा दुर्लभ अवस्थामा कलेजोमा गम्भीर असर हुन सक्छ।',
+    prescription: 'उत्पादन र formulation अनुसार फरक पर्न सक्छ।',
+    price: null,
+    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
+    source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
+    priceVerified: false,
+    verificationStatus: 'pending'
   }
 ];
 
@@ -136,15 +147,24 @@ const emptyForm = {
   name: '',
   nepali: '',
   category: '',
+  forms: '',
   use: '',
   symptoms: '',
   caution: '',
   side: '',
-  forms: '',
+  prescription: '',
   price: '',
   priceNote: '',
-  prescription: '',
   source: ''
+};
+
+const emptyVerification = {
+  medicineId: '',
+  status: 'pending',
+  pharmacistName: '',
+  registration: '',
+  notes: '',
+  reviewConfirmed: false
 };
 
 const money = value => {
@@ -154,60 +174,31 @@ const money = value => {
   return `रु. ${Number(value).toLocaleString('en-IN')}`;
 };
 
-const verificationBadge = status => {
-  const badges = {
-    verified: {
-      label: '✓ Verified',
-      background: '#dcfce7',
-      color: '#166534',
-      border: '#86efac'
-    },
-    under_review: {
-      label: '◷ Under Review',
-      background: '#fef3c7',
-      color: '#92400e',
-      border: '#fcd34d'
-    },
-    pending: {
-      label: '○ Pending',
-      background: '#f1f5f9',
-      color: '#475569',
-      border: '#cbd5e1'
-    }
-  };
-
-  const badge = badges[status] || badges.pending;
-
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '5px 10px',
-        borderRadius: '20px',
-        fontSize: '11px',
-        fontWeight: 700,
-        background: badge.background,
-        color: badge.color,
-        border: `1px solid ${badge.border}`
-      }}
-    >
-      {badge.label}
-    </span>
-  );
-};
-
 async function readResponse(response) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || `Request असफल भयो (${response.status})`);
+    throw new Error(
+      data.error || `Request असफल भयो (${response.status})`
+    );
   }
 
   return data;
 }
 
-function App() {
+function verificationBadge(status) {
+  const badges = {
+    verified: ['✓ Verified', 'verified'],
+    under_review: ['◷ Under Review', 'unverified'],
+    pending: ['○ Pending', 'unverified']
+  };
+
+  const [label, className] = badges[status] || badges.pending;
+
+  return <span className={className}>{label}</span>;
+}
+
+export default function App() {
   const [items, setItems] = useState(starter);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('सबै');
@@ -217,34 +208,37 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminKey, setAdminKey] = useState('');
   const [notice, setNotice] = useState('');
+  const [noticeType, setNoticeType] = useState('info');
+
   const [editingId, setEditingId] = useState(null);
   const [savingMedicine, setSavingMedicine] = useState(false);
   const [savingVerification, setSavingVerification] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [form, setForm] = useState({ ...emptyForm });
+  const [verificationForm, setVerificationForm] =
+    useState({ ...emptyVerification });
 
-  const [verificationForm, setVerificationForm] = useState({
-    medicineId: '',
-    status: 'pending',
-    pharmacistName: '',
-    registration: '',
-    notes: '',
-    reviewConfirmed: false
-  });
-
+  // Load medicines from backend
   useEffect(() => {
     let active = true;
 
-    fetch('/api/medicines')
-      .then(readResponse)
-      .then(data => {
-        if (active && Array.isArray(data.items) && data.items.length > 0) {
+    async function loadMedicines() {
+      try {
+        const response = await fetch(API);
+        const data = await readResponse(response);
+
+        if (active && Array.isArray(data.items)) {
           setItems(data.items);
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Medicine API:', error);
-      });
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadMedicines();
 
     return () => {
       active = false;
@@ -252,7 +246,10 @@ function App() {
   }, []);
 
   const categories = useMemo(
-    () => ['सबै', ...new Set(items.map(item => item.category).filter(Boolean))],
+    () => [
+      'सबै',
+      ...new Set(items.map(item => item.category).filter(Boolean))
+    ],
     [items]
   );
 
@@ -268,25 +265,42 @@ function App() {
         item.symptoms
       ].join(' ').toLowerCase();
 
-      const matchesSearch = searchable.includes(search);
-      const matchesCategory =
-        category === 'सबै' || item.category === category;
-
-      return matchesSearch && matchesCategory;
+      return (
+        searchable.includes(search) &&
+        (category === 'सबै' || item.category === category)
+      );
     });
   }, [items, query, category]);
+
+  function showMessage(message, type = 'info') {
+    setNotice(message);
+    setNoticeType(type);
+  }
+
+  function updateForm(field, value) {
+    setForm(previous => ({
+      ...previous,
+      [field]: value
+    }));
+  }
+
+  function updateVerificationForm(field, value) {
+    setVerificationForm(previous => ({
+      ...previous,
+      [field]: value
+    }));
+  }
 
   function resetMedicineForm() {
     setEditingId(null);
     setForm({ ...emptyForm });
   }
 
-  function editMedicine(medicineId) {
-    const medicine = items.find(item => item.id === medicineId);
+  function editMedicine(id) {
+    const medicine = items.find(item => item.id === id);
 
     if (!medicine) {
-      setNotice('चयन गरिएको औषधि भेटिएन।');
-      resetMedicineForm();
+      showMessage('चयन गरिएको औषधि भेटिएन।', 'error');
       return;
     }
 
@@ -296,18 +310,18 @@ function App() {
       name: medicine.name || '',
       nepali: medicine.nepali || '',
       category: medicine.category || '',
+      forms: medicine.forms || '',
       use: medicine.use || '',
       symptoms: medicine.symptoms || '',
       caution: medicine.caution || '',
       side: medicine.side || '',
-      forms: medicine.forms || '',
+      prescription: medicine.prescription || '',
       price: medicine.price ?? '',
       priceNote: medicine.priceNote || '',
-      prescription: medicine.prescription || '',
       source: medicine.source || ''
     });
 
-    setNotice(`${medicine.name} Edit गर्न चयन भयो।`);
+    showMessage(`${medicine.name} Edit गर्न चयन भयो।`);
   }
 
   async function saveMedicine(event) {
@@ -315,36 +329,46 @@ function App() {
     setNotice('');
 
     if (!adminKey.trim()) {
-      setNotice('Admin API key राख्नुहोस्।');
+      showMessage('Admin API key राख्नुहोस्।', 'error');
       return;
     }
 
-    if (!form.name.trim() || !form.nepali.trim() || !form.category.trim()) {
-      setNotice('औषधिको नाम, नेपाली नाम र Category अनिवार्य छन्।');
+    if (
+      !form.name.trim() ||
+      !form.nepali.trim() ||
+      !form.category.trim() ||
+      !form.use.trim() ||
+      !form.caution.trim() ||
+      !form.source.trim()
+    ) {
+      showMessage('आवश्यक विवरणहरू पूरा गर्नुहोस्।', 'error');
       return;
     }
 
-    if (form.price !== '' && (!Number.isFinite(Number(form.price)) || Number(form.price) < 0)) {
-      setNotice('मूल्य शून्य वा सोभन्दा बढी हुनुपर्छ।');
+    if (
+      form.price !== '' &&
+      (!Number.isFinite(Number(form.price)) || Number(form.price) < 0)
+    ) {
+      showMessage('मूल्य शून्य वा सोभन्दा बढी हुनुपर्छ।', 'error');
       return;
     }
+
+    const wasEditing = Boolean(editingId);
+
+    const payload = {
+      ...form,
+      ...(editingId ? { id: editingId } : {}),
+      price: form.price === '' ? null : Number(form.price)
+    };
 
     setSavingMedicine(true);
 
     try {
-      const wasEditing = Boolean(editingId);
-
-      const payload = {
-        ...form,
-        ...(editingId ? { id: editingId } : {}),
-        price: form.price === '' ? null : Number(form.price)
-      };
-
-      const response = await fetch('/api/medicines', {
+      const response = await fetch(API, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': adminKey
+          'x-admin-key': adminKey.trim()
         },
         body: JSON.stringify(payload)
       });
@@ -355,9 +379,9 @@ function App() {
         throw new Error('Server बाट औषधिको विवरण प्राप्त भएन।');
       }
 
-      setItems(oldItems => [
+      setItems(previous => [
         data.item,
-        ...oldItems.filter(item => item.id !== data.item.id)
+        ...previous.filter(item => item.id !== data.item.id)
       ]);
 
       if (selected?.id === data.item.id) {
@@ -366,13 +390,17 @@ function App() {
 
       resetMedicineForm();
 
-      setNotice(
+      showMessage(
         wasEditing
           ? 'औषधिको विवरण सफलतापूर्वक Update भयो।'
-          : 'नयाँ औषधि सफलतापूर्वक थपियो।'
+          : 'नयाँ औषधि सफलतापूर्वक थपियो।',
+        'success'
       );
     } catch (error) {
-      setNotice(`${error.message} कृपया API key र Backend जाँच गर्नुहोस्।`);
+      showMessage(
+        `${error.message} API key र Backend जाँच गर्नुहोस्।`,
+        'error'
+      );
     } finally {
       setSavingMedicine(false);
     }
@@ -383,12 +411,12 @@ function App() {
     setNotice('');
 
     if (!adminKey.trim()) {
-      setNotice('Admin API key राख्नुहोस्।');
+      showMessage('Admin API key राख्नुहोस्।', 'error');
       return;
     }
 
     if (!verificationForm.medicineId) {
-      setNotice('औषधि छान्नुहोस्।');
+      showMessage('औषधि छान्नुहोस्।', 'error');
       return;
     }
 
@@ -400,7 +428,10 @@ function App() {
         !verificationForm.reviewConfirmed
       )
     ) {
-      setNotice('Verified गर्न वास्तविक Pharmacist को नाम, दर्ता नम्बर र समीक्षा पुष्टि आवश्यक छ।');
+      showMessage(
+        'Verified गर्न वास्तविक Pharmacist को नाम, दर्ता नम्बर र समीक्षा पुष्टि आवश्यक छ।',
+        'error'
+      );
       return;
     }
 
@@ -408,23 +439,19 @@ function App() {
 
     try {
       const response = await fetch(
-        `/api/medicines/${encodeURIComponent(verificationForm.medicineId)}/verification`,
+        `${API}/${encodeURIComponent(verificationForm.medicineId)}/verification`,
         {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            'x-admin-key': adminKey
+            'x-admin-key': adminKey.trim()
           },
           body: JSON.stringify({
             status: verificationForm.status,
+            pharmacistName: verificationForm.pharmacistName,
+            registration: verificationForm.registration,
             notes: verificationForm.notes,
-            ...(verificationForm.status === 'verified'
-              ? {
-                  pharmacistName: verificationForm.pharmacistName,
-                  registration: verificationForm.registration,
-                  reviewConfirmed: verificationForm.reviewConfirmed
-                }
-              : {})
+            reviewConfirmed: verificationForm.reviewConfirmed
           })
         }
       );
@@ -435,8 +462,8 @@ function App() {
         throw new Error('Server बाट Verification विवरण प्राप्त भएन।');
       }
 
-      setItems(oldItems =>
-        oldItems.map(item =>
+      setItems(previous =>
+        previous.map(item =>
           item.id === data.item.id ? data.item : item
         )
       );
@@ -445,51 +472,32 @@ function App() {
         setSelected(data.item);
       }
 
-      setNotice('Verification status सफलतापूर्वक Update भयो।');
+      setVerificationForm({ ...emptyVerification });
 
-      setVerificationForm({
-        medicineId: '',
-        status: 'pending',
-        pharmacistName: '',
-        registration: '',
-        notes: '',
-        reviewConfirmed: false
-      });
+      showMessage(
+        'Verification status सफलतापूर्वक Update भयो।',
+        'success'
+      );
     } catch (error) {
-      setNotice(error.message);
+      showMessage(error.message, 'error');
     } finally {
       setSavingVerification(false);
     }
   }
 
-  function updateForm(field, value) {
-    setForm(oldForm => ({
-      ...oldForm,
-      [field]: value
-    }));
-  }
-
-  function updateVerificationForm(field, value) {
-    setVerificationForm(oldForm => ({
-      ...oldForm,
-      [field]: value
-    }));
+  function openAdmin() {
+    setShowAdmin(value => !value);
+    setNotice('');
   }
 
   return (
     <div className="app">
       <header className="top">
-        <div
-          className="brand"
-          onClick={() => {
-            setTab('home');
-            setSelected(null);
-          }}
-        >
-          <div className="logo">W<span>+</span></div>
+        <div className="brand">
+          <div className="logo">W</div>
           <div>
-            <b>WYRMORA <em>MEDICAL</em></b>
-            <small>औषधि बुझौँ, स्वास्थ्य सचेत बनौँ</small>
+            <strong>WYRMORA</strong>
+            <small>MEDICAL</small>
           </div>
         </div>
 
@@ -514,8 +522,8 @@ function App() {
             हाम्रो बारेमा
           </button>
 
-          <button onClick={() => setShowAdmin(value => !value)}>
-            Admin
+          <button onClick={openAdmin}>
+            {showAdmin ? 'Admin बन्द गर्नुहोस्' : 'Admin'}
           </button>
         </nav>
       </header>
@@ -523,196 +531,80 @@ function App() {
       <main>
         <section className="hero">
           <div className="hero-copy">
-            <span className="eyebrow">NEPAL'S MEDICINE INFORMATION GUIDE</span>
+            <span className="eyebrow">
+              NEPAL'S MEDICINE INFORMATION GUIDE
+            </span>
+
             <h1>
               औषधिबारे सही जानकारी,
               <br />
               <i>नेपाली भाषामा।</i>
             </h1>
+
             <p>
-              कुन औषधि केका लागि प्रयोग हुन्छ, के सावधानी अपनाउने र
-              मूल्य कहाँ पुष्टि गर्ने—एकै ठाउँमा बुझ्नुहोस्।
+              कुन औषधि केका लागि प्रयोग हुन्छ, के सावधानी अपनाउने
+              र मूल्य कहाँ पुष्टि गर्ने—एकै ठाउँमा बुझ्नुहोस्।
             </p>
+
             <div className="trust">
               <span>✓ सरल नेपाली</span>
               <span>✓ सावधानीसहित</span>
-              <span>✓ मूल्य पारदर्शिता</span>
+              <span>✓ जानकारीमूलक</span>
             </div>
           </div>
 
           <div className="hero-art">
-            <div className="cross">✚</div>
-            <div className="pill pill-a"></div>
-            <div className="pill pill-b"></div>
             <div className="art-card">
-              <b>Medicine guide</b>
-              <strong>स्वास्थ्य जानकारी</strong>
-              <small>
-                पहिले बुझ्नुहोस्, त्यसपछि स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।
-              </small>
+              <div className="cross">✚</div>
+              <h3>WYRMORA</h3>
+              <p>Medicine Information</p>
             </div>
           </div>
         </section>
-
-        {tab === 'about' ? (
-          <section className="about panel">
-            <h2>WYRMORA MEDICAL बारेमा</h2>
-            <p>
-              WYRMORA MEDICAL औषधिको सामान्य जानकारी नेपाली भाषामा
-              बुझ्न सहयोग गर्ने सूचना प्लेटफर्म हो। यसले चिकित्सकको
-              जाँच, निदान वा प्रिस्क्रिप्सनको स्थान लिँदैन।
-            </p>
-
-            <h3>हाम्रो प्रतिबद्धता</h3>
-            <ul>
-              <li>औषधिको उपयोग, सावधानी र सम्भावित असर स्पष्ट भाषामा प्रस्तुत गर्ने।</li>
-              <li>मूल्य स्रोत र अद्यावधिक मिति बिना मूल्यलाई प्रमाणित भनेर नदेखाउने।</li>
-              <li>प्रिस्क्रिप्सन औषधि अनधिकृत रूपमा बिक्री नगर्ने।</li>
-            </ul>
-
-            <p className="warning">
-              आपतकालीन लक्षण, सास फेर्न गाह्रो, बेहोस हुने, छाती दुख्ने
-              वा गम्भीर एलर्जी भए तुरुन्त नजिकको स्वास्थ्य संस्था जानुहोस्।
-            </p>
-          </section>
-        ) : (
-          <>
-            <section className="search-wrap">
-              <div className="search">
-                <span>⌕</span>
-                <input
-                  value={query}
-                  onChange={event => setQuery(event.target.value)}
-                  placeholder="औषधिको नाम खोज्नुहोस् — जस्तै Paracetamol, ज्वरो, एलर्जी..."
-                />
-                <kbd>SEARCH</kbd>
-              </div>
-
-              <div className="chips">
-                {categories.map(itemCategory => (
-                  <button
-                    key={itemCategory}
-                    className={category === itemCategory ? 'chosen' : ''}
-                    onClick={() => setCategory(itemCategory)}
-                  >
-                    {itemCategory}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="section-head">
-              <div>
-                <span className="eyebrow">MEDICINE DIRECTORY</span>
-                <h2>औषधिको जानकारी</h2>
-              </div>
-              <span className="count">{filtered.length} औषधि</span>
-            </section>
-
-            <section className="medicine-grid">
-              {filtered.map(medicine => (
-                <article
-                  className="medicine-card"
-                  key={medicine.id}
-                  onClick={() => setSelected(medicine)}
-                >
-                  <div className="med-top">
-                    <div className="med-icon">
-                      {medicine.category === 'एन्टिबायोटिक'
-                        ? 'Rx'
-                        : medicine.category === 'एलर्जी'
-                          ? '✿'
-                          : '✚'}
-                    </div>
-
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-end',
-                        gap: '7px'
-                      }}
-                    >
-                      {verificationBadge(medicine.verificationStatus)}
-                      <span className={medicine.priceVerified ? 'verified' : 'unverified'}>
-                        {medicine.priceVerified
-                          ? '✓ मूल्य स्रोत पुष्टि'
-                          : 'मूल्य/जानकारी पुष्टि बाँकी'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="med-category">{medicine.category}</div>
-                  <h3>{medicine.name}</h3>
-                  <div className="nepali">{medicine.nepali}</div>
-                  <p>{medicine.use}</p>
-
-                  <div className="med-bottom">
-                    <div>
-                      <small>मूल्य</small>
-                      <b>{money(medicine.price)}</b>
-                    </div>
-                    <button
-                      onClick={event => {
-                        event.stopPropagation();
-                        setSelected(medicine);
-                      }}
-                    >
-                      विवरण हेर्नुहोस् ↗
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </section>
-
-            {filtered.length === 0 && (
-              <div className="empty">
-                यो खोजीमा औषधि भेटिएन। अर्को नाम वा category प्रयोग गर्नुहोस्।
-              </div>
-            )}
-          </>
-        )}
 
         {showAdmin && (
           <section className="admin panel">
             <div className="section-head">
               <div>
-                <span className="eyebrow">CONTENT MANAGEMENT</span>
-                <h2>औषधि व्यवस्थापन</h2>
+                <span className="admin-tag">ADMIN PANEL</span>
+                <h2>Medicine Management</h2>
               </div>
-              <span className="admin-tag">ADMIN</span>
             </div>
 
             <p>
-              Admin API key राखेर औषधिको विवरण थप्नुहोस् वा पुरानो
-              विवरण Update गर्नुहोस्।
+              Admin API key राखेर नयाँ औषधि थप्नुहोस्, पुरानो
+              विवरण Update गर्नुहोस् वा Pharmacist Verification गर्नुहोस्।
             </p>
 
-            <form onSubmit={saveMedicine}>
-              <label>
-                Admin API key
-                <input
-                  type="password"
-                  value={adminKey}
-                  onChange={event => setAdminKey(event.target.value)}
-                  required
-                />
-              </label>
+            <label>
+              Admin API Key
+              <input
+                type="password"
+                value={adminKey}
+                onChange={event => setAdminKey(event.target.value)}
+                placeholder="Enter admin API key"
+                autoComplete="off"
+              />
+            </label>
 
+            <hr />
+
+            <h3>Add / Edit Medicine</h3>
+
+            <form onSubmit={saveMedicine}>
               <label>
                 पहिलेको औषधि Edit गर्नुहोस्
                 <select
                   value={editingId || ''}
                   onChange={event => {
-                    const medicineId = event.target.value;
+                    const id = event.target.value;
 
-                    if (!medicineId) {
+                    if (!id) {
                       resetMedicineForm();
-                      setNotice('नयाँ औषधि थप्न तयार छ।');
-                      return;
+                      showMessage('नयाँ औषधि थप्न तयार छ।');
+                    } else {
+                      editMedicine(id);
                     }
-
-                    editMedicine(medicineId);
                   }}
                 >
                   <option value="">＋ नयाँ औषधि थप्ने</option>
@@ -726,7 +618,8 @@ function App() {
 
               {editingId && (
                 <p className="notice">
-                  अहिले पुरानो औषधि Edit हुँदैछ। विवरण परिवर्तन गरेर Update गर्नुहोस्।
+                  अहिले पुरानो औषधि Edit हुँदैछ। विवरण परिवर्तन गरेर
+                  Update गर्नुहोस्।
                 </p>
               )}
 
@@ -742,11 +635,12 @@ function App() {
                   ['side', 'सम्भावित side effects'],
                   ['prescription', 'Prescription स्थिति'],
                   ['price', 'मूल्य (रु.)'],
-                  ['priceNote', 'मूल्य स्रोत/प्याकेट विवरण'],
+                  ['priceNote', 'मूल्य स्रोत / प्याकेट विवरण'],
                   ['source', 'जानकारीको स्रोत']
                 ].map(([field, label]) => (
                   <label key={field}>
                     {label}
+
                     {[
                       'use',
                       'symptoms',
@@ -756,11 +650,10 @@ function App() {
                     ].includes(field) ? (
                       <textarea
                         value={form[field]}
-                        onChange={event => updateForm(field, event.target.value)}
+                        onChange={event =>
+                          updateForm(field, event.target.value)
+                        }
                         required={[
-                          'name',
-                          'nepali',
-                          'category',
                           'use',
                           'caution',
                           'source'
@@ -772,15 +665,25 @@ function App() {
                         min={field === 'price' ? '0' : undefined}
                         step={field === 'price' ? '0.01' : undefined}
                         value={form[field]}
-                        onChange={event => updateForm(field, event.target.value)}
-                        required={['name', 'nepali', 'category'].includes(field)}
+                        onChange={event =>
+                          updateForm(field, event.target.value)
+                        }
+                        required={[
+                          'name',
+                          'nepali',
+                          'category'
+                        ].includes(field)}
                       />
                     )}
                   </label>
                 ))}
               </div>
 
-              <button className="primary" type="submit" disabled={savingMedicine}>
+              <button
+                className="primary"
+                type="submit"
+                disabled={savingMedicine}
+              >
                 {savingMedicine
                   ? 'सेभ हुँदैछ...'
                   : editingId
@@ -793,21 +696,21 @@ function App() {
                   type="button"
                   onClick={() => {
                     resetMedicineForm();
-                    setNotice('Edit रद्द गरियो। नयाँ औषधि थप्न सक्नुहुन्छ।');
+                    showMessage('Edit रद्द गरियो।');
                   }}
                 >
                   Edit Cancel गर्नुहोस्
                 </button>
               )}
-
-              {notice && <p className="notice">{notice}</p>}
             </form>
 
             <hr />
 
             <h3>Pharmacist Verification</h3>
+
             <p>
-              Verified स्थिति वास्तविक योग्य Pharmacist ले समीक्षा गरेपछि मात्र चयन गर्नुहोस्।
+              Verified स्थिति वास्तविक योग्य Pharmacist ले समीक्षा
+              गरेपछि मात्र चयन गर्नुहोस्।
             </p>
 
             <form onSubmit={saveVerification}>
@@ -851,7 +754,10 @@ function App() {
                     <input
                       value={verificationForm.pharmacistName}
                       onChange={event =>
-                        updateVerificationForm('pharmacistName', event.target.value)
+                        updateVerificationForm(
+                          'pharmacistName',
+                          event.target.value
+                        )
                       }
                       required
                     />
@@ -862,7 +768,10 @@ function App() {
                     <input
                       value={verificationForm.registration}
                       onChange={event =>
-                        updateVerificationForm('registration', event.target.value)
+                        updateVerificationForm(
+                          'registration',
+                          event.target.value
+                        )
                       }
                       required
                     />
@@ -873,11 +782,15 @@ function App() {
                       type="checkbox"
                       checked={verificationForm.reviewConfirmed}
                       onChange={event =>
-                        updateVerificationForm('reviewConfirmed', event.target.checked)
+                        updateVerificationForm(
+                          'reviewConfirmed',
+                          event.target.checked
+                        )
                       }
                       required
                     />
-                    मैले Pharmacist को योग्यता जाँच गरी वास्तविक समीक्षा भएको पुष्टि गर्छु।
+                    मैले Pharmacist को योग्यता जाँच गरी वास्तविक
+                    समीक्षा भएको पुष्टि गर्छु।
                   </label>
                 </>
               )}
@@ -892,80 +805,198 @@ function App() {
                 />
               </label>
 
-              <button className="primary" type="submit" disabled={savingVerification}>
-                {savingVerification ? 'Update हुँदैछ...' : 'Update Verification'}
+              <button
+                className="primary"
+                type="submit"
+                disabled={savingVerification}
+              >
+                {savingVerification
+                  ? 'Update हुँदैछ...'
+                  : 'Update Verification'}
               </button>
-
-              {notice && <p className="notice">{notice}</p>}
             </form>
+
+            {notice && (
+              <p className={`notice ${noticeType}`}>
+                {notice}
+              </p>
+            )}
           </section>
+        )}
+
+        {tab === 'about' ? (
+          <section className="about panel">
+            <h2>हाम्रो बारेमा</h2>
+            <p>
+              WYRMORA MEDICAL औषधिसम्बन्धी सामान्य जानकारी
+              नेपाली भाषामा उपलब्ध गराउने उद्देश्यले बनाइएको
+              शैक्षिक प्लेटफर्म हो।
+            </p>
+            <p>
+              हाम्रो उद्देश्य औषधिको उपयोग, सावधानी, सम्भावित
+              असर र मूल्यसम्बन्धी जानकारी बुझ्न सजिलो बनाउनु हो।
+            </p>
+          </section>
+        ) : (
+          <>
+            <section className="panel">
+              <div className="section-head">
+                <div>
+                  <span className="eyebrow">MEDICINE DIRECTORY</span>
+                  <h2>औषधि सूची</h2>
+                </div>
+                <span className="count">
+                  {filtered.length} औषधि
+                </span>
+              </div>
+
+              <div className="search-wrap">
+                <span>⌕</span>
+                <input
+                  className="search"
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                  placeholder="औषधिको नाम खोज्नुहोस्..."
+                />
+                <kbd>SEARCH</kbd>
+              </div>
+
+              <div className="chips">
+                {categories.map(itemCategory => (
+                  <button
+                    key={itemCategory}
+                    className={
+                      category === itemCategory ? 'chosen' : ''
+                    }
+                    onClick={() => setCategory(itemCategory)}
+                  >
+                    {itemCategory}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {loading && <p>औषधिको विवरण लोड हुँदैछ...</p>}
+
+            <section className="medicine-grid">
+              {filtered.map(medicine => (
+                <article
+                  className="medicine-card"
+                  key={medicine.id}
+                  onClick={() => setSelected(medicine)}
+                >
+                  <div className="med-top">
+                    <div className="med-icon">✚</div>
+
+                    <div>
+                      {verificationBadge(medicine.verificationStatus)}
+
+                      <span
+                        className={
+                          medicine.priceVerified
+                            ? 'verified'
+                            : 'unverified'
+                        }
+                      >
+                        {medicine.priceVerified
+                          ? '✓ मूल्य स्रोत पुष्टि'
+                          : 'मूल्य/जानकारी पुष्टि बाँकी'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="med-category">
+                    {medicine.category}
+                  </div>
+
+                  <h3>{medicine.name}</h3>
+                  <div className="nepali">{medicine.nepali}</div>
+                  <p>{medicine.use}</p>
+
+                  <div className="med-bottom">
+                    <div>
+                      <small>मूल्य</small>
+                      <b>{money(medicine.price)}</b>
+                    </div>
+
+                    <button
+                      onClick={event => {
+                        event.stopPropagation();
+                        setSelected(medicine);
+                      }}
+                    >
+                      विवरण हेर्नुहोस् ↗
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            {!loading && filtered.length === 0 && (
+              <div className="empty">
+                <h3>औषधि भेटिएन</h3>
+                <p>अर्को नाम वा Category प्रयोग गरेर खोज्नुहोस्।</p>
+              </div>
+            )}
+          </>
         )}
 
         <section className="warning">
           <h3>महत्त्वपूर्ण स्वास्थ्य सूचना</h3>
           <p>
-            WYRMORA MEDICAL मा दिइएको औषधिसम्बन्धी जानकारी शैक्षिक
-            प्रयोजनका लागि मात्र हो। यो चिकित्सकीय सल्लाह, निदान वा
-            उपचारको विकल्प होइन। कुनै पनि औषधि प्रयोग गर्नुअघि योग्य
-            चिकित्सक वा फार्मासिस्टसँग परामर्श गर्नुहोस्।
+            WYRMORA MEDICAL मा दिइएको औषधिसम्बन्धी जानकारी
+            शैक्षिक प्रयोजनका लागि मात्र हो। यो चिकित्सकीय
+            सल्लाह, निदान वा उपचारको विकल्प होइन। कुनै पनि
+            औषधि प्रयोग गर्नुअघि योग्य चिकित्सक वा फार्मासिस्टसँग
+            परामर्श गर्नुहोस्।
           </p>
         </section>
-
-        <footer>
-          <div className="brand">
-            <div className="logo">W<span>+</span></div>
-            <div>
-              <b>WYRMORA <em>MEDICAL</em></b>
-              <small>Health knowledge, made understandable.</small>
-            </div>
-          </div>
-
-          <p>
-            यो एप सामान्य जानकारीका लागि हो, चिकित्सकीय सल्लाह होइन।
-            कुनै औषधि सुरु, बन्द वा मात्रा परिवर्तन गर्नुअघि योग्य
-            स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।
-          </p>
-
-          <small>
-            © {new Date().getFullYear()} WYRMORA Medical. All rights reserved.
-          </small>
-        </footer>
       </main>
 
+      <footer>
+        <strong>WYRMORA MEDICAL</strong>
+        <p>Medicine information for everyone.</p>
+        <small>© {new Date().getFullYear()} WYRMORA. All rights reserved.</small>
+      </footer>
+
       {selected && (
-        <div className="overlay" onClick={() => setSelected(null)}>
-          <section className="detail" onClick={event => event.stopPropagation()}>
-            <button className="close" onClick={() => setSelected(null)}>
+        <div
+          className="overlay"
+          onClick={() => setSelected(null)}
+        >
+          <section
+            className="detail"
+            onClick={event => event.stopPropagation()}
+          >
+            <button
+              className="close"
+              onClick={() => setSelected(null)}
+            >
               ×
             </button>
 
             <span className="eyebrow">MEDICINE DETAILS</span>
 
-            <div className="detail-title">
-              <div className="med-icon big">✚</div>
-              <div>
-                <h2>{selected.name}</h2>
-                <div className="nepali">{selected.nepali}</div>
-                {verificationBadge(selected.verificationStatus)}
-              </div>
-            </div>
+            <h2 className="detail-title">
+              {selected.name}
+            </h2>
+
+            <div className="nepali">{selected.nepali}</div>
+
+            {verificationBadge(selected.verificationStatus)}
 
             <div className="price-panel">
-              <small>नेपालमा देखाइएको मूल्य</small>
-              <strong>{money(selected.price)}</strong>
-              <span>
-                {selected.priceNote || 'मूल्य उपलब्ध छैन'}
-                {selected.priceUpdatedAt
-                  ? ` · अपडेट: ${new Date(selected.priceUpdatedAt).toLocaleDateString('ne-NP')}`
-                  : ''}
-              </span>
+              <small>मूल्य</small>
+              <h2>{money(selected.price)}</h2>
+              <p>{selected.priceNote || 'मूल्य पुष्टि हुँदैछ।'}</p>
             </div>
 
             {[
-              ['के कामका लागि प्रयोग हुन्छ?', selected.use],
-              ['कुन अवस्थामा प्रयोग गरिन्छ?', selected.symptoms],
-              ['उपलब्ध औषधिको रूप', selected.forms],
-              ['सम्भावित side effects', selected.side],
+              ['Category', selected.category],
+              ['Dosage forms', selected.forms],
+              ['के कामका लागि प्रयोग हुन्छ', selected.use],
+              ['कुन अवस्थामा प्रयोग गरिन्छ', selected.symptoms],
+              ['सम्भावित Side Effects', selected.side],
               ['महत्त्वपूर्ण सावधानी', selected.caution],
               ['Prescription स्थिति', selected.prescription],
               ['जानकारीको स्रोत', selected.source]
@@ -977,22 +1008,13 @@ function App() {
             ))}
 
             <div className="warning">
-              यो जानकारी व्यक्तिगत उपचार योजना होइन। औषधिको मात्रा वा
-              समय आफैं निर्धारण नगर्नुहोस्। औषधिको प्याकेट र योग्य
-              चिकित्सक वा फार्मासिस्टको सल्लाह पालना गर्नुहोस्।
+              यो जानकारी व्यक्तिगत उपचार योजना होइन।
+              औषधिको मात्रा वा समय आफैं निर्धारण नगर्नुहोस्।
+              योग्य चिकित्सक वा फार्मासिस्टको सल्लाह पालना गर्नुहोस्।
             </div>
-
-            <button
-              className="primary full"
-              onClick={() => setSelected(null)}
-            >
-              बुझें
-            </button>
           </section>
         </div>
       )}
     </div>
   );
 }
-
-export default App;
