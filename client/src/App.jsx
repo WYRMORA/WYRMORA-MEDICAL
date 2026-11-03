@@ -72,7 +72,100 @@ async function saveMedicine(e){e.preventDefault();setNotice('');try{const r=awai
 return <div className="app"><header className="top"><div className="brand" onClick={()=>{setTab('home');setSelected(null)}}><div className="logo">W<span>+</span></div><div><b>WYRMORA <em>MEDICAL</em></b><small>औषधि बुझौँ, स्वास्थ्य सचेत बनौँ</small></div></div><nav><button className={tab==='home'?'active':''} onClick={()=>{setTab('home');setSelected(null)}}>औषधि खोज्नुहोस्</button><button onClick={()=>{setTab('about');setSelected(null)}}>हाम्रो बारेमा</button><button onClick={()=>setShowAdmin(v=>!v)}>Admin</button></nav></header>
 <main><section className="hero"><div className="hero-copy"><span className="eyebrow">NEPAL'S MEDICINE INFORMATION GUIDE</span><h1>औषधिबारे सही जानकारी,<br/><i>नेपाली भाषामा।</i></h1><p>कुन औषधि केका लागि प्रयोग हुन्छ, के सावधानी अपनाउने र मूल्य कहाँ पुष्टि गर्ने—एकै ठाउँमा बुझ्नुहोस्।</p><div className="trust"><span>✓ सरल नेपाली</span><span>✓ सावधानीसहित</span><span>✓ मूल्य पारदर्शिता</span></div></div><div className="hero-art"><div className="cross">✚</div><div className="pill pill-a"></div><div className="pill pill-b"></div><div className="art-card"><b>Medicine guide</b><strong>स्वास्थ्य जानकारी</strong><small>पहिले बुझ्नुहोस्, त्यसपछि स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।</small></div></div></section>
 {tab==='about'?<section className="about panel"><h2>WYRMORA MEDICAL बारेमा</h2><p>WYRMORA MEDICAL औषधिको सामान्य जानकारी नेपाली भाषामा बुझ्न सहयोग गर्ने सूचना प्लेटफर्म हो। यसले चिकित्सकको जाँच, निदान वा प्रिस्क्रिप्सनको स्थान लिँदैन।</p><h3>हाम्रो प्रतिबद्धता</h3><ul><li>औषधिको उपयोग, सावधानी र सम्भावित असर स्पष्ट भाषामा प्रस्तुत गर्ने।</li><li>मूल्य स्रोत र अद्यावधिक मिति बिना मूल्यलाई प्रमाणित भनेर नदेखाउने।</li><li>प्रिस्क्रिप्सन औषधि अनधिकृत रूपमा बिक्री नगर्ने।</li></ul><p className="warning">आपतकालीन लक्षण, सास फेर्न गाह्रो, बेहोस हुने, छाती दुख्ने वा गम्भीर एलर्जी भए तुरुन्त नजिकको स्वास्थ्य संस्था जानुहोस्।</p></section>:<><section className="search-wrap"><div className="search"><span>⌕</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="औषधिको नाम खोज्नुहोस् — जस्तै Paracetamol, ज्वरो, एलर्जी..."/><kbd>SEARCH</kbd></div><div className="chips">{categories.map(c=><button key={c} className={category===c?'chosen':''} onClick={()=>setCategory(c)}>{c}</button>)}</div></section><section className="section-head"><div><span className="eyebrow">MEDICINE DIRECTORY</span><h2>औषधिको जानकारी</h2></div><span className="count">{filtered.length} औषधि</span></section><section className="medicine-grid">{filtered.map(m=><article className="medicine-card" key={m.id} onClick={()=>setSelected(m)}><div className="med-top"><div className="med-icon">{m.category==='एन्टिबायोटिक'?'Rx':m.category==='एलर्जी'?'✿':'✚'}</div><span className={m.priceVerified?'verified':'unverified'}>{m.priceVerified?'✓ मूल्य स्रोत पुष्टि':'मूल्य/जानकारी पुष्टि बाँकी'}</span></div><div className="med-category">{m.category}</div><h3>{m.name}</h3><div className="nepali">{m.nepali}</div><p>{m.use}</p><div className="med-bottom"><div><small>मूल्य</small><b>{money(m.price)}</b></div><button onClick={e=>{e.stopPropagation();setSelected(m)}}>विवरण हेर्नुहोस् ↗</button></div></article>)}</section>{filtered.length===0&&<div className="empty">यो खोजीमा औषधि भेटिएन। अर्को नाम वा category प्रयोग गर्नुहोस्।</div>}</>}
-{showAdmin&&<section className="admin panel"><div className="section-head"><div><span className="eyebrow">CONTENT MANAGEMENT</span><h2>औषधि व्यवस्थापन</h2></div><span className="admin-tag">ADMIN</span></div><p>Admin API key राखेर औषधिको विवरण र फार्मेसीबाट पुष्टि भएको मूल्य थप्नुहोस्।</p><form onSubmit={saveMedicine}><label>Admin API key<input type="password" value={adminKey} onChange={e=>setAdminKey(e.target.value)} required/></label><div className="form-grid">{[['name','Medicine name'],['nepali','नेपाली नाम'],['category','Category'],['forms','Dosage forms'],['use','के कामका लागि प्रयोग हुन्छ'],['symptoms','कुन अवस्थामा प्रयोग गरिन्छ'],['caution','सावधानी'],['side','सम्भावित side effects'],['prescription','Prescription स्थिति'],['price','मूल्य (रु.)'],['priceNote','मूल्य स्रोत/प्याकेट विवरण'],['source','जानकारीको स्रोत']].map(([k,l])=><label key={k}>{l}{['use','symptoms','caution','side','source'].includes(k)?<textarea value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} required={['name','nepali','category','use','caution','source'].includes(k)}/>:<input type={k==='price'?'number':'text'} min="0" value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} required={['name','nepali','category'].includes(k)}/>}</label>)}</div><button className="primary" type="submit">औषधि सेभ गर्नुहोस्</button>{notice&&<p className="notice">{notice}</p>}</form></section>}<section className="warning">
+{showAdmin&&<section className="admin panel"><div className="section-head"><div><span className="eyebrow">CONTENT MANAGEMENT</span><h2>औषधि व्यवस्थापन</h2></div><span className="admin-tag">ADMIN</span></div><p>Admin API key राखेर औषधिको विवरण र फार्मेसीबाट पुष्टि भएको मूल्य थप्नुहोस्।</p><form onSubmit={saveMedicine}><label>Admin API key<input type="password" value={adminKey} onChange={e=>setAdminKey(e.target.value)} required/></label><div className="form-grid">{[['name','Medicine name'],['nepali','नेपाली नाम'],['category','Category'],['forms','Dosage forms'],['use','के कामका लागि प्रयोग हुन्छ'],['symptoms','कुन अवस्थामा प्रयोग गरिन्छ'],['caution','सावधानी'],['side','सम्भावित side effects'],['prescription','Prescription स्थिति'],['price','मूल्य (रु.)'],['priceNote','मूल्य स्रोत/प्याकेट विवरण'],['source','जानकारीको स्रोत']].map(([k,l])=><label key={k}>{l}{['use','symptoms','caution','side','source'].includes(k)?<textarea value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} required={['name','nepali','category','use','caution','source'].includes(k)}/>:<input type={k==='price'?'number':'text'} min="0" value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} required={['name','nepali','category'].includes(k)}/>}</label>)}</div><button className="primary" type="submit">औषधि सेभ गर्नुहोस्</button>{notice&&<p className="notice">{notice}</p>}</form> <hr />
+<h3>Pharmacist Verification</h3>
+
+<form onSubmit={saveVerification}>
+  <label>
+    औषधि छान्नुहोस्
+    <select
+      value={verificationForm.medicineId}
+      onChange={e => setVerificationForm({
+        ...verificationForm,
+        medicineId: e.target.value
+      })}
+      required
+    >
+      <option value="">औषधि छान्नुहोस्</option>
+      {items.map(m => (
+        <option key={m.id} value={m.id}>
+          {m.name} — {m.nepali}
+        </option>
+      ))}
+    </select>
+  </label>
+
+  <label>
+    Verification Status
+    <select
+      value={verificationForm.status}
+      onChange={e => setVerificationForm({
+        ...verificationForm,
+        status: e.target.value
+      })}
+    >
+      <option value="pending">Pending</option>
+      <option value="under_review">Under Review</option>
+      <option value="verified">Verified</option>
+    </select>
+  </label>
+
+  {verificationForm.status === 'verified' && (
+    <>
+      <label>
+        Pharmacist Name
+        <input
+          value={verificationForm.pharmacistName}
+          onChange={e => setVerificationForm({
+            ...verificationForm,
+            pharmacistName: e.target.value
+          })}
+          required
+        />
+      </label>
+
+      <label>
+        Registration Number
+        <input
+          value={verificationForm.registration}
+          onChange={e => setVerificationForm({
+            ...verificationForm,
+            registration: e.target.value
+          })}
+          required
+        />
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          checked={verificationForm.reviewConfirmed}
+          onChange={e => setVerificationForm({
+            ...verificationForm,
+            reviewConfirmed: e.target.checked
+          })}
+          required
+        />
+        मैले pharmacist को योग्यता जाँच गरी वास्तविक समीक्षा भएको पुष्टि गर्छु।
+      </label>
+    </>
+  )}
+
+  <label>
+    Review Notes
+    <textarea
+      value={verificationForm.notes}
+      onChange={e => setVerificationForm({
+        ...verificationForm,
+        notes: e.target.value
+      })}
+    />
+  </label>
+
+  <button className="primary" type="submit">
+    Update Verification
+  </button>
+</form> </section>}<section className="warning">
   <h3>महत्त्वपूर्ण स्वास्थ्य सूचना</h3>
   <p>
     WYRMORA MEDICAL मा दिइएको औषधिसम्बन्धी जानकारी
