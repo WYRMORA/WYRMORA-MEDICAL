@@ -2,13 +2,11 @@
   "name": "wyrmora-medical",
   "version": "1.0.0",
   "private": true,
-  "description": "WYRMORA Medical Nepali medicine information platform",
   "workspaces": [
     "server",
     "client"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w client",
     "start": "npm run start -w server",
     "test": "npm run test -w server",
