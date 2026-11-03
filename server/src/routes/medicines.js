@@ -16,9 +16,26 @@ const schema = z.object({
   priceNote:z.string().max(500).optional().default('मूल्य पुष्टि हुन बाँकी'),
   source:z.string().trim().min(3).max(1000)
 });
-const map = r => ({id:r.id,name:r.name,nepali:r.nepali_name,category:r.category,forms:r.forms,use:r.use_description,symptoms:r.symptoms,caution:r.caution,side:r.side_effects,prescription:r.prescription_status,price:r.price_npr===null?null:Number(r.price_npr),priceNote:r.price_note,source:r.source,priceVerified:r.price_verified,priceUpdatedAt:r.price_updated_at});
-router.get('/',async(req,res,next)=>{try{
- const q=String(req.query.q||'').trim().slice(0,100); const category=String(req.query.category||'').trim().slice(0,100);
+const map = r => ({
+  id:r.id,
+  name:r.name,
+  nepali:r.nepali_name,
+  category:r.category,
+  forms:r.forms,
+  use:r.use_description,
+  symptoms:r.symptoms,
+  caution:r.caution,
+  side:r.side_effects,
+  prescription:r.prescription_status,
+  price:r.price_npr===null?null:Number(r.price_npr),
+  priceNote:r.price_note,
+  source:r.source,
+  priceVerified:r.price_verified,
+  priceUpdatedAt:r.price_updated_at,
+  verificationStatus:r.verification_status,
+  verifiedBy:r.verified_by,
+  verifiedAt:r.verified_at
+});
  const {rows}=await pool.query(`SELECT * FROM medicines WHERE ($1='' OR name ILIKE '%'||$1||'%' OR nepali_name ILIKE '%'||$1||'%' OR category ILIKE '%'||$1||'%') AND ($2='' OR category=$2) ORDER BY name LIMIT 200`,[q,category]);
  res.json({items:rows.map(map)});
 }catch(e){next(e)}});
