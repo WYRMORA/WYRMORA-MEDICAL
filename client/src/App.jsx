@@ -8,7 +8,7 @@ const starter=[
 {id:'amoxicillin',name:'Amoxicillin',nepali:'एमोक्सिसिलिन',category:'एन्टिबायोटिक',forms:'क्याप्सुल, ट्याब्लेट, सस्पेन्सन',use:'केही ब्याक्टेरियाबाट हुने संक्रमणको उपचारमा चिकित्सकले प्रयोग गराउने penicillin समूहको एन्टिबायोटिक हो।',symptoms:'कान, छाती, घाँटी वा अन्य ब्याक्टेरियल संक्रमण—संक्रमणको प्रकारअनुसार चिकित्सकले निर्णय गर्छन्।',caution:'भाइरसका कारण हुने रुघाखोकी/फ्लुमा काम गर्दैन। बाँकी औषधि आफैं नखानुहोस्, अरूलाई नदिनुहोस्। Penicillin allergy भए प्रयोग नगर्नुहोस् र स्वास्थ्यकर्मीलाई जानकारी दिनुहोस्।',side:'पखाला, वाकवाकी, छालामा डाबर; सास फेर्न गाह्रो/अनुहार सुन्निएमा आपतकालीन उपचार लिनुहोस्।',prescription:'प्रिस्क्रिप्सन आवश्यक',price:null,priceNote:'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',source:'सामान्य औषधि जानकारी; एन्टिबायोटिकको प्रयोग चिकित्सकको निर्णयमा',priceVerified:false}
 ];
 const money=v=>v==null?'मूल्य पुष्टि हुँदैछ':`रु. ${Number(v).toLocaleString('en-IN')}`;
-function App(){const [items,setItems]=useState(starter),
+function App(){const [items,setItems]=useState(starter);
 const [verificationForm,setVerificationForm]=useState({
   medicineId:'',
   status:'pending',
