@@ -1,0 +1,35 @@
+# Render Blueprint: API + managed PostgreSQL in Singapore. Review pricing before creation.
+services:
+  - type: web
+    name: wyrmora-medical-api
+    runtime: node
+    plan: 0.5c-512mb
+    region: singapore
+    buildCommand: npm install
+    preDeployCommand: npm run db:migrate
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_NAME
+        value: wyrmora_session
+      - key: CLIENT_ORIGIN
+        value: https://wyrmora-medical.vercel.app
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wyrmora-medical-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MEDICINE_ADMIN_KEY
+        generateValue: true
+databases:
+  - name: wyrmora-medical-db
+    plan: 0.5c-1g
+    region: singapore
+    databaseName: wyrmora_medical
+    user: wyrmora_medical
