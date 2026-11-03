@@ -72,47 +72,21 @@ const [form,setForm]=useState({
   name:'',nepali:'',category:'',use:'',symptoms:'',
   caution:'',side:'',forms:'',price:'',
   priceNote:'',prescription:'',source:''
-});useEffect(()=>{fetch('/api/medicines').then(r=>r.ok?r.json():null).then(d=>{if(d?.items?.length)setItems(d.items)}).catch(()=>{});},[]);
-const categories=['सबै',...new Set(items.map(x=>x.category).filter(Boolean))];
-const filtered=useMemo(()=>items.filter(x=>`${x.name} ${x.nepali} ${x.category} ${x.use}`.toLowerCase().includes(query.toLowerCase())&&(category==='सबै'||x.category===category)),[items,query,category]);
-
-async function saveVerification(e) {
-  e.preventDefault();
-  setNotice('');
-
-  try {
-    const r = await fetch(
-      `/api/medicines/${encodeURIComponent(verificationForm.medicineId)}/verification`,
-      {
-        method:'PATCH',
-        headers:{
-          'Content-Type':'application/json',
-          'x-admin-key':adminKey
-        },
-    body:JSON.stringify({
-  status: verificationForm.status,
-  notes: verificationForm.notes,
-  ...(verificationForm.status === 'verified' ? {
-    pharmacistName: verificationForm.pharmacistName,
-    registration: verificationForm.registration,
-    reviewConfirmed: verificationForm.reviewConfirmed
-  } : {})
-})
+        body:JSON.stringify({
+          status: verificationForm.status,
+          notes: verificationForm.notes,
+          ...(verificationForm.status === 'verified' ? {
+            pharmacistName: verificationForm.pharmacistName,
+            registration: verificationForm.registration,
+            reviewConfirmed: verificationForm.reviewConfirmed
+          } : {})
+        })
+      }
+    );
 
     const d = await r.json();
 
     if (!r.ok) throw new Error(d.error || 'Verification असफल भयो');
-
-    setItems(old => old.map(item =>
-      item.id === d.item.id ? d.item : item
-    ));
-
-    setSelected(d.item);
-    setNotice('Verification status सफलतापूर्वक अपडेट भयो।');
-
-    setVerificationForm({
-      medicineId:'',
-      status:'pending',
       pharmacistName:'',
       registration:'',
       notes:'',
