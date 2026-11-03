@@ -30,6 +30,14 @@ const schema = z.object({
   source: z.string().trim().min(3).max(1000)
 });
 
+const verificationSchema = z.object({
+  status: z.enum(['pending', 'under_review', 'verified']),
+  pharmacistName: z.string().trim().min(2).max(160).optional(),
+  registration: z.string().trim().min(2).max(100).optional(),
+  notes: z.string().trim().max(2000).optional().default(''),
+  reviewConfirmed: z.boolean().optional().default(false)
+});
+
 const map = r => ({
   id: r.id,
   name: r.name,
@@ -51,7 +59,19 @@ const map = r => ({
   verifiedAt: r.verified_at
 });
 
-// GET: औषधिहरूको सूची
+function isAdminKeyValid(req) {
+  const secret = process.env.MEDICINE_ADMIN_KEY;
+  const supplied = req.get('x-admin-key') || '';
+
+  if (!secret || !supplied) return false;
+
+  const a = Buffer.from(String(secret));
+  const b = Buffer.from(String(supplied));
+
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+// GET: Medicine list
 router.get('/', async (req, res, next) => {
   try {
     const q = String(req.query.q || '').trim();
@@ -77,22 +97,10 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-// POST: औषधि थप्ने वा अपडेट गर्ने
+// POST: Add or update medicine
 router.post('/', adminWriteLimit, async (req, res, next) => {
   try {
-    const secret = process.env.MEDICINE_ADMIN_KEY;
-    const supplied = req.get('x-admin-key') || '';
-
-    const a = Buffer.from(String(secret || ''));
-    const b = Buffer.from(String(supplied));
-
-    const keyMatches = Boolean(
-      secret && supplied &&
-      a.length === b.length &&
-      timingSafeEqual(a, b)
-    );
-
-    if (!keyMatches) {
+    if (!isAdminKeyValid(req)) {
       return res.status(403).json({
         error: 'Admin key गलत छ वा server मा MEDICINE_ADMIN_KEY सेट गरिएको छैन।'
       });
@@ -108,6 +116,7 @@ router.post('/', adminWriteLimit, async (req, res, next) => {
     }
 
     const d = parsed.data;
+
     const id = d.id || d.name.toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
@@ -164,38 +173,24 @@ router.post('/', adminWriteLimit, async (req, res, next) => {
   }
 });
 
-// PATCH: Pharmacist Verification status update
-const verificationSchema = z.object({
-  status: z.enum(['pending', 'under_review', 'verified']),
-  pharmacistName: z.string().trim().min(2).max(160).optional(),
-  registration: z.string().trim().min(2).max(100).optional(),
-  notes: z.string().trim().max(2000).optional().default(''),
-  reviewConfirmed: z.boolean().optional().default(false)
-});
-
+// PATCH: Pharmacist verification
 router.patch('/:id/verification', adminWriteLimit, async (req, res, next) => {
   try {
-    const secret = process.env.MEDICINE_ADMIN_KEY;
-    const supplied = req.get('x-admin-key') || '';
-
-    const a = Buffer.from(String(secret || ''));
-    const b = Buffer.from(String(supplied));
-
-    const keyMatches = Boolean(
-      secret && supplied &&
-      a.length === b.length &&
-      timingSafeEqual(a, b)
-    );
-
-    if (!keyMatches) {
-      return res.status(403).json({ error: 'Admin key गलत छ।' });
+    if (!isAdminKeyValid(req)) {
+      return res.status(403).json({
+        error: 'Admin key गलत छ।'
+      });
     }
 
     const parsed = verificationSchema.safeParse(req.body);
 
     if (!parsed.success) {
+      const problems = parsed.error.issues
+        .map(issue => `${issue.path.join('.') || 'body'}: ${issue.message}`)
+        .join('; ');
+
       return res.status(400).json({
-        error: 'Verification विवरण जाँच गर्नुहोस्।'
+        error: `Verification विवरण जाँच गर्नुहोस्: ${problems}`
       });
     }
 
@@ -230,7 +225,9 @@ router.patch('/:id/verification', adminWriteLimit, async (req, res, next) => {
     );
 
     if (!rows.length) {
-      return res.status(404).json({ error: 'औषधि भेटिएन।' });
+      return res.status(404).json({
+        error: 'औषधि भेटिएन।'
+      });
     }
 
     res.json({ item: map(rows[0]) });
