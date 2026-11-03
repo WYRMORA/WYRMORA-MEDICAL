@@ -49,15 +49,15 @@ async function saveVerification(e) {
           'Content-Type':'application/json',
           'x-admin-key':adminKey
         },
-        body:JSON.stringify({
-          status:verificationForm.status,
-          pharmacistName:verificationForm.pharmacistName,
-          registration:verificationForm.registration,
-          notes:verificationForm.notes,
-          reviewConfirmed:verificationForm.reviewConfirmed
-        })
-      }
-    );
+    body:JSON.stringify({
+  status: verificationForm.status,
+  notes: verificationForm.notes,
+  ...(verificationForm.status === 'verified' ? {
+    pharmacistName: verificationForm.pharmacistName,
+    registration: verificationForm.registration,
+    reviewConfirmed: verificationForm.reviewConfirmed
+  } : {})
+})
 
     const d = await r.json();
 
