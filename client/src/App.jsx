@@ -166,6 +166,9 @@ function App() {
   const [adminKey, setAdminKey] = useState('');
   const [notice, setNotice] = useState('');
 
+  // कुन औषधि Edit भइरहेको छ भन्ने ID
+  const [editingId, setEditingId] = useState(null);
+
   const [form, setForm] = useState({
     name:'',
     nepali:'',
@@ -204,6 +207,55 @@ function App() {
     ),
     [items, query, category]
   );
+
+  // खाली Medicine Form
+  function resetMedicineForm() {
+    setEditingId(null);
+
+    setForm({
+      name:'',
+      nepali:'',
+      category:'',
+      use:'',
+      symptoms:'',
+      caution:'',
+      side:'',
+      forms:'',
+      price:'',
+      priceNote:'',
+      prescription:'',
+      source:''
+    });
+  }
+
+  // पुरानो Medicine को विवरण Form मा राख्ने
+  function editMedicine(medicineId) {
+    const medicine = items.find(item => item.id === medicineId);
+
+    if (!medicine) {
+      resetMedicineForm();
+      return;
+    }
+
+    setEditingId(medicine.id);
+
+    setForm({
+      name:medicine.name || '',
+      nepali:medicine.nepali || '',
+      category:medicine.category || '',
+      use:medicine.use || '',
+      symptoms:medicine.symptoms || '',
+      caution:medicine.caution || '',
+      side:medicine.side || '',
+      forms:medicine.forms || '',
+      price:medicine.price ?? '',
+      priceNote:medicine.priceNote || '',
+      prescription:medicine.prescription || '',
+      source:medicine.source || ''
+    });
+
+    setNotice(`${medicine.name} Edit गर्न चयन भयो।`);
+  }
 
   async function saveVerification(e) {
     e.preventDefault();
@@ -257,6 +309,7 @@ function App() {
     }
   }
 
+  // नयाँ Medicine Save गर्ने वा पुरानो Medicine Update गर्ने
   async function saveMedicine(e) {
     e.preventDefault();
     setNotice('');
@@ -270,6 +323,10 @@ function App() {
         },
         body:JSON.stringify({
           ...form,
+
+          // Edit गर्दा पुरानै ID पठाउने
+          ...(editingId ? { id:editingId } : {}),
+
           price:form.price === '' ? null : Number(form.price)
         })
       });
@@ -285,22 +342,15 @@ function App() {
         ...old.filter(x => x.id !== d.item.id)
       ]);
 
-      setForm({
-        name:'',
-        nepali:'',
-        category:'',
-        use:'',
-        symptoms:'',
-        caution:'',
-        side:'',
-        forms:'',
-        price:'',
-        priceNote:'',
-        prescription:'',
-        source:''
-      });
+      const wasEditing = Boolean(editingId);
 
-      setNotice('औषधिको विवरण सेभ भयो।');
+      resetMedicineForm();
+
+      setNotice(
+        wasEditing
+          ? 'औषधिको विवरण सफलतापूर्वक Update भयो।'
+          : 'नयाँ औषधि सफलतापूर्वक थपियो।'
+      );
 
     } catch (err) {
       setNotice(err.message + ' — API/database setup जाँच गर्नुहोस्।');
@@ -513,8 +563,7 @@ function App() {
             </div>
 
             <p>
-              Admin API key राखेर औषधिको विवरण र फार्मेसीबाट
-              पुष्टि भएको मूल्य थप्नुहोस्।
+              Admin API key राखेर औषधिको विवरण थप्नुहोस् वा पुरानो विवरण Update गर्नुहोस्।
             </p>
 
             <form onSubmit={saveMedicine}>
@@ -527,6 +576,40 @@ function App() {
                   required
                 />
               </label>
+
+              {/* Edit Medicine Selector */}
+              <label>
+                पहिलेको औषधि Edit गर्नुहोस्
+
+                <select
+                  value={editingId || ''}
+                  onChange={e => {
+                    const medicineId = e.target.value;
+
+                    if (!medicineId) {
+                      resetMedicineForm();
+                      setNotice('नयाँ औषधि थप्न तयार छ।');
+                      return;
+                    }
+
+                    editMedicine(medicineId);
+                  }}
+                >
+                  <option value="">＋ नयाँ औषधि थप्ने</option>
+
+                  {items.map(m => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} — {m.nepali}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {editingId && (
+                <p className="notice">
+                  अहिले पुरानो औषधि Edit हुँदैछ। विवरण परिवर्तन गरेर Update गर्नुहोस्।
+                </p>
+              )}
 
               <div className="form-grid">
                 {[
@@ -572,8 +655,22 @@ function App() {
               </div>
 
               <button className="primary" type="submit">
-                औषधि सेभ गर्नुहोस्
+                {editingId
+                  ? 'औषधि Update गर्नुहोस्'
+                  : 'नयाँ औषधि सेभ गर्नुहोस्'}
               </button>
+
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetMedicineForm();
+                    setNotice('Edit रद्द गरियो। नयाँ औषधि थप्न सक्नुहुन्छ।');
+                  }}
+                >
+                  Edit Cancel गर्नुहोस्
+                </button>
+              )}
 
               {notice && <p className="notice">{notice}</p>}
             </form>
