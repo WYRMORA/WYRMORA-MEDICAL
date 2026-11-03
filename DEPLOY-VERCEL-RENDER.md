@@ -55,3 +55,8 @@ If the Vercel production domain differs, change Render `CLIENT_ORIGIN` to the ex
 ## What is not automated
 
 You must connect your own GitHub, Render and Vercel accounts and approve deployment/billing. This package cannot register a pharmacy, obtain DDA approval, provide live verified medicine prices, configure a payment merchant account, or generate a public production URL by itself. Pharmacy checkout/payment is not enabled.
+
+
+## Free test deployment notice
+
+This package uses Render Free web service and Free PostgreSQL for initial testing. Render Free web services spin down after 15 minutes of inactivity and can take about a minute to wake. Free Render PostgreSQL is limited to 1 GB and expires 30 days after creation; export or migrate data before expiry. Free instances are for testing/hobby use, not production. Database migrations run in the build command because Render pre-deploy commands are only available on paid compute plans. Review current Render limits before deploying.

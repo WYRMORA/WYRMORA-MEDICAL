@@ -1,12 +1,11 @@
-# Render Blueprint: API + managed PostgreSQL in Singapore. Review pricing before creation.
+# Render Blueprint: FREE test deployment. Free Postgres expires after 30 days; not for production data.
 services:
   - type: web
     name: wyrmora-medical-api
     runtime: node
-    plan: 0.5c-512mb
+    plan: free
     region: singapore
-    buildCommand: npm install
-    preDeployCommand: npm run db:migrate
+    buildCommand: npm install && npm run db:migrate
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeployTrigger: commit
@@ -29,7 +28,7 @@ services:
         generateValue: true
 databases:
   - name: wyrmora-medical-db
-    plan: 0.5c-1g
+    plan: free
     region: singapore
     databaseName: wyrmora_medical
     user: wyrmora_medical
