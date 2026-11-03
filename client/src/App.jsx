@@ -8,10 +8,66 @@ const starter=[
 {id:'amoxicillin',name:'Amoxicillin',nepali:'एमोक्सिसिलिन',category:'एन्टिबायोटिक',forms:'क्याप्सुल, ट्याब्लेट, सस्पेन्सन',use:'केही ब्याक्टेरियाबाट हुने संक्रमणको उपचारमा चिकित्सकले प्रयोग गराउने penicillin समूहको एन्टिबायोटिक हो।',symptoms:'कान, छाती, घाँटी वा अन्य ब्याक्टेरियल संक्रमण—संक्रमणको प्रकारअनुसार चिकित्सकले निर्णय गर्छन्।',caution:'भाइरसका कारण हुने रुघाखोकी/फ्लुमा काम गर्दैन। बाँकी औषधि आफैं नखानुहोस्, अरूलाई नदिनुहोस्। Penicillin allergy भए प्रयोग नगर्नुहोस् र स्वास्थ्यकर्मीलाई जानकारी दिनुहोस्।',side:'पखाला, वाकवाकी, छालामा डाबर; सास फेर्न गाह्रो/अनुहार सुन्निएमा आपतकालीन उपचार लिनुहोस्।',prescription:'प्रिस्क्रिप्सन आवश्यक',price:null,priceNote:'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',source:'सामान्य औषधि जानकारी; एन्टिबायोटिकको प्रयोग चिकित्सकको निर्णयमा',priceVerified:false}
 ];
 const money=v=>v==null?'मूल्य पुष्टि हुँदैछ':`रु. ${Number(v).toLocaleString('en-IN')}`;
-function App(){const [items,setItems]=useState(starter),[query,setQuery]=useState(''),[category,setCategory]=useState('सबै'),[selected,setSelected]=useState(null),[tab,setTab]=useState('home'),[showAdmin,setShowAdmin]=useState(false),[adminKey,setAdminKey]=useState(''),[notice,setNotice]=useState(''),[form,setForm]=useState({name:'',nepali:'',category:'',use:'',symptoms:'',caution:'',side:'',forms:'',price:'',priceNote:'',prescription:'',source:''});
+function App(){const [items,setItems]=useState(starter),
+const [verificationForm,setVerificationForm]=useState({
+  medicineId:'',
+  status:'pending',
+  pharmacistName:'',
+  registration:'',
+  notes:'',
+  reviewConfirmed:false
+});
+[query,setQuery]=useState(''),[category,setCategory]=useState('सबै'),[selected,setSelected]=useState(null),[tab,setTab]=useState('home'),[showAdmin,setShowAdmin]=useState(false),[adminKey,setAdminKey]=useState(''),[notice,setNotice]=useState(''),[form,setForm]=useState({name:'',nepali:'',category:'',use:'',symptoms:'',caution:'',side:'',forms:'',price:'',priceNote:'',prescription:'',source:''});
 useEffect(()=>{fetch('/api/medicines').then(r=>r.ok?r.json():null).then(d=>{if(d?.items?.length)setItems(d.items)}).catch(()=>{});},[]);
 const categories=['सबै',...new Set(items.map(x=>x.category).filter(Boolean))];
 const filtered=useMemo(()=>items.filter(x=>`${x.name} ${x.nepali} ${x.category} ${x.use}`.toLowerCase().includes(query.toLowerCase())&&(category==='सबै'||x.category===category)),[items,query,category]);
+
+async function saveVerification(e) {
+  e.preventDefault();
+  setNotice('');
+
+  try {
+    const r = await fetch(
+      `/api/medicines/${encodeURIComponent(verificationForm.medicineId)}/verification`,
+      {
+        method:'PATCH',
+        headers:{
+          'Content-Type':'application/json',
+          'x-admin-key':adminKey
+        },
+        body:JSON.stringify({
+          status:verificationForm.status,
+          pharmacistName:verificationForm.pharmacistName,
+          registration:verificationForm.registration,
+          notes:verificationForm.notes,
+          reviewConfirmed:verificationForm.reviewConfirmed
+        })
+      }
+    );
+
+    const d = await r.json();
+
+    if (!r.ok) throw new Error(d.error || 'Verification असफल भयो');
+
+    setItems(old => old.map(item =>
+      item.id === d.item.id ? d.item : item
+    ));
+
+    setSelected(d.item);
+    setNotice('Verification status सफलतापूर्वक अपडेट भयो।');
+
+    setVerificationForm({
+      medicineId:'',
+      status:'pending',
+      pharmacistName:'',
+      registration:'',
+      notes:'',
+      reviewConfirmed:false
+    });
+  } catch(err) {
+    setNotice(err.message);
+  }
+}
 async function saveMedicine(e){e.preventDefault();setNotice('');try{const r=await fetch('/api/medicines',{method:'POST',headers:{'Content-Type':'application/json','x-admin-key':adminKey},body:JSON.stringify({...form,price:form.price===''?null:Number(form.price)})});const d=await r.json();if(!r.ok)throw new Error(d.error||'सेभ गर्न सकिएन');setItems(old=>[d.item,...old.filter(x=>x.id!==d.item.id)]);setForm({name:'',nepali:'',category:'',use:'',symptoms:'',caution:'',side:'',forms:'',price:'',priceNote:'',prescription:'',source:''});setNotice('औषधिको विवरण सेभ भयो।');}catch(err){setNotice(err.message+' — API/database setup जाँच गर्नुहोस्।')}}
 return <div className="app"><header className="top"><div className="brand" onClick={()=>{setTab('home');setSelected(null)}}><div className="logo">W<span>+</span></div><div><b>WYRMORA <em>MEDICAL</em></b><small>औषधि बुझौँ, स्वास्थ्य सचेत बनौँ</small></div></div><nav><button className={tab==='home'?'active':''} onClick={()=>{setTab('home');setSelected(null)}}>औषधि खोज्नुहोस्</button><button onClick={()=>{setTab('about');setSelected(null)}}>हाम्रो बारेमा</button><button onClick={()=>setShowAdmin(v=>!v)}>Admin</button></nav></header>
 <main><section className="hero"><div className="hero-copy"><span className="eyebrow">NEPAL'S MEDICINE INFORMATION GUIDE</span><h1>औषधिबारे सही जानकारी,<br/><i>नेपाली भाषामा।</i></h1><p>कुन औषधि केका लागि प्रयोग हुन्छ, के सावधानी अपनाउने र मूल्य कहाँ पुष्टि गर्ने—एकै ठाउँमा बुझ्नुहोस्।</p><div className="trust"><span>✓ सरल नेपाली</span><span>✓ सावधानीसहित</span><span>✓ मूल्य पारदर्शिता</span></div></div><div className="hero-art"><div className="cross">✚</div><div className="pill pill-a"></div><div className="pill pill-b"></div><div className="art-card"><b>Medicine guide</b><strong>स्वास्थ्य जानकारी</strong><small>पहिले बुझ्नुहोस्, त्यसपछि स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।</small></div></div></section>
