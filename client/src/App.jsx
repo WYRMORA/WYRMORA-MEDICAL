@@ -8,7 +8,9 @@ const starter=[
 {id:'amoxicillin',name:'Amoxicillin',nepali:'एमोक्सिसिलिन',category:'एन्टिबायोटिक',forms:'क्याप्सुल, ट्याब्लेट, सस्पेन्सन',use:'केही ब्याक्टेरियाबाट हुने संक्रमणको उपचारमा चिकित्सकले प्रयोग गराउने penicillin समूहको एन्टिबायोटिक हो।',symptoms:'कान, छाती, घाँटी वा अन्य ब्याक्टेरियल संक्रमण—संक्रमणको प्रकारअनुसार चिकित्सकले निर्णय गर्छन्।',caution:'भाइरसका कारण हुने रुघाखोकी/फ्लुमा काम गर्दैन। बाँकी औषधि आफैं नखानुहोस्, अरूलाई नदिनुहोस्। Penicillin allergy भए प्रयोग नगर्नुहोस् र स्वास्थ्यकर्मीलाई जानकारी दिनुहोस्।',side:'पखाला, वाकवाकी, छालामा डाबर; सास फेर्न गाह्रो/अनुहार सुन्निएमा आपतकालीन उपचार लिनुहोस्।',prescription:'प्रिस्क्रिप्सन आवश्यक',price:null,priceNote:'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',source:'सामान्य औषधि जानकारी; एन्टिबायोटिकको प्रयोग चिकित्सकको निर्णयमा',priceVerified:false}
 ];
 const money=v=>v==null?'मूल्य पुष्टि हुँदैछ':`रु. ${Number(v).toLocaleString('en-IN')}`;
-function App(){const [items,setItems]=useState(starter);
+function App(){function App(){
+const [items,setItems]=useState(starter);
+
 const [verificationForm,setVerificationForm]=useState({
   medicineId:'',
   status:'pending',
@@ -17,8 +19,20 @@ const [verificationForm,setVerificationForm]=useState({
   notes:'',
   reviewConfirmed:false
 });
-[query,setQuery]=useState(''),[category,setCategory]=useState('सबै'),[selected,setSelected]=useState(null),[tab,setTab]=useState('home'),[showAdmin,setShowAdmin]=useState(false),[adminKey,setAdminKey]=useState(''),[notice,setNotice]=useState(''),[form,setForm]=useState({name:'',nepali:'',category:'',use:'',symptoms:'',caution:'',side:'',forms:'',price:'',priceNote:'',prescription:'',source:''});
-useEffect(()=>{fetch('/api/medicines').then(r=>r.ok?r.json():null).then(d=>{if(d?.items?.length)setItems(d.items)}).catch(()=>{});},[]);
+
+const [query,setQuery]=useState('');
+const [category,setCategory]=useState('सबै');
+const [selected,setSelected]=useState(null);
+const [tab,setTab]=useState('home');
+const [showAdmin,setShowAdmin]=useState(false);
+const [adminKey,setAdminKey]=useState('');
+const [notice,setNotice]=useState('');
+
+const [form,setForm]=useState({
+  name:'',nepali:'',category:'',use:'',symptoms:'',
+  caution:'',side:'',forms:'',price:'',
+  priceNote:'',prescription:'',source:''
+});useEffect(()=>{fetch('/api/medicines').then(r=>r.ok?r.json():null).then(d=>{if(d?.items?.length)setItems(d.items)}).catch(()=>{});},[]);
 const categories=['सबै',...new Set(items.map(x=>x.category).filter(Boolean))];
 const filtered=useMemo(()=>items.filter(x=>`${x.name} ${x.nepali} ${x.category} ${x.use}`.toLowerCase().includes(query.toLowerCase())&&(category==='सबै'||x.category===category)),[items,query,category]);
 
