@@ -1,9 +1,9 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { timingSafeEqual } from 'node:crypto';
 import rateLimit from 'express-rate-limit';
 import { pool } from '../db.js';
+import { requireAuth, allowRoles } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -73,18 +73,6 @@ const map = r => ({
   verifiedAt: r.verified_at
 });
 
-function isAdminKeyValid(req) {
-  const secret = process.env.MEDICINE_ADMIN_KEY;
-  const supplied = req.get('x-admin-key') || '';
-
-  if (!secret || !supplied) return false;
-
-  const a = Buffer.from(String(secret));
-  const b = Buffer.from(String(supplied));
-
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 // GET: Medicine list
 router.get('/', async (req, res, next) => {
   try {
@@ -112,13 +100,8 @@ router.get('/', async (req, res, next) => {
 });
 
 // POST: Add or update medicine
-router.post('/', adminWriteLimit, async (req, res, next) => {
+router.post('/', requireAuth, allowRoles('super_admin','editor'), adminWriteLimit, async (req,res,next) => {
   try {
-    if (!isAdminKeyValid(req)) {
-      return res.status(403).json({
-        error: 'Admin key गलत छ वा server मा MEDICINE_ADMIN_KEY सेट गरिएको छैन।'
-      });
-    }
 
     const parsed = schema.safeParse(req.body);
 
@@ -181,6 +164,7 @@ router.post('/', adminWriteLimit, async (req, res, next) => {
       ]
     );
 
+    await pool.query('INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata) VALUES($1,$2,$3,$4,$5)', [req.user.id, d.id ? 'medicine_updated' : 'medicine_created', 'medicine', id, JSON.stringify({ name: d.name })]);
     res.status(201).json({ item: map(rows[0]) });
   } catch (e) {
     next(e);
@@ -188,13 +172,8 @@ router.post('/', adminWriteLimit, async (req, res, next) => {
 });
 
 // PATCH: Pharmacist verification
-router.patch('/:id/verification', adminWriteLimit, async (req, res, next) => {
+router.patch('/:id/verification', requireAuth, allowRoles('super_admin','editor'), adminWriteLimit, async (req,res,next) => {
   try {
-    if (!isAdminKeyValid(req)) {
-      return res.status(403).json({
-        error: 'Admin key गलत छ।'
-      });
-    }
 
     const parsed = verificationSchema.safeParse(req.body);
 
@@ -244,6 +223,7 @@ router.patch('/:id/verification', adminWriteLimit, async (req, res, next) => {
       });
     }
 
+    await pool.query('INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata) VALUES($1,$2,$3,$4,$5)', [req.user.id, 'medicine_verification_updated', 'medicine', req.params.id, JSON.stringify({ status: d.status, pharmacistName: d.pharmacistName || null })]);
     res.json({ item: map(rows[0]) });
   } catch (e) {
     next(e);

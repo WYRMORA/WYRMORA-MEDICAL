@@ -34,8 +34,8 @@ test('registration validation rejects weak passwords', async () => {
   assert.equal(response.body.error,'Invalid registration details.');
 });
 
-test('medicine write endpoint is protected by the server-side admin key', async () => {
+test('medicine write endpoint requires an authenticated admin session', async () => {
   const app = createApp();
   const response = await request(app).post('/api/medicines').send({name:'Test',nepali:'परीक्षण'});
-  assert.equal(response.status,403);
+  assert.equal(response.status,401);
 });

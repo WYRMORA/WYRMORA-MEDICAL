@@ -1,6 +1,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
+import AdminConsole from './AdminConsole.jsx';
+
 
 const API = '/api/medicines';
 
@@ -206,7 +208,6 @@ export default function App() {
   const [tab, setTab] = useState('home');
 
   const [showAdmin, setShowAdmin] = useState(false);
-  const [adminKey, setAdminKey] = useState('');
   const [notice, setNotice] = useState('');
   const [noticeType, setNoticeType] = useState('info');
 
@@ -328,11 +329,6 @@ export default function App() {
     event.preventDefault();
     setNotice('');
 
-    if (!adminKey.trim()) {
-      showMessage('Admin API key राख्नुहोस्।', 'error');
-      return;
-    }
-
     if (
       !form.name.trim() ||
       !form.nepali.trim() ||
@@ -367,8 +363,7 @@ export default function App() {
       const response = await fetch(API, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-admin-key': adminKey.trim()
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
@@ -410,11 +405,6 @@ export default function App() {
     event.preventDefault();
     setNotice('');
 
-    if (!adminKey.trim()) {
-      showMessage('Admin API key राख्नुहोस्।', 'error');
-      return;
-    }
-
     if (!verificationForm.medicineId) {
       showMessage('औषधि छान्नुहोस्।', 'error');
       return;
@@ -443,8 +433,7 @@ export default function App() {
         {
           method: 'PATCH',
           headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey.trim()
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             status: verificationForm.status,
@@ -563,6 +552,7 @@ export default function App() {
         </section>
 
         {showAdmin && (
+          <AdminConsole onClose={() => setShowAdmin(false)}>
           <section className="admin panel">
             <div className="section-head">
               <div>
@@ -571,21 +561,7 @@ export default function App() {
               </div>
             </div>
 
-            <p>
-              Admin API key राखेर नयाँ औषधि थप्नुहोस्, पुरानो
-              विवरण Update गर्नुहोस् वा Pharmacist Verification गर्नुहोस्।
-            </p>
-
-            <label>
-              Admin API Key
-              <input
-                type="password"
-                value={adminKey}
-                onChange={event => setAdminKey(event.target.value)}
-                placeholder="Enter admin API key"
-                autoComplete="off"
-              />
-            </label>
+            <p>Login भएको Super Admin वा Editor ले मात्र औषधि व्यवस्थापन गर्न सक्छ।</p>
 
             <hr />
 
@@ -822,6 +798,7 @@ export default function App() {
               </p>
             )}
           </section>
+          </AdminConsole>
         )}
 
         {tab === 'about' ? (
