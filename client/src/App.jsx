@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import AdminConsole from './AdminConsole.jsx';
+import MedicineReportForm from './MedicineReportForm.jsx';
 
 
 const API = '/api/medicines';
@@ -989,6 +990,8 @@ export default function App() {
               औषधिको मात्रा वा समय आफैं निर्धारण नगर्नुहोस्।
               योग्य चिकित्सक वा फार्मासिस्टको सल्लाह पालना गर्नुहोस्।
             </div>
+
+            <MedicineReportForm medicineId={selected.id} medicineName={selected.name} />
           </section>
         </div>
       )}

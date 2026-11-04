@@ -14,6 +14,20 @@ const adminWriteLimit = rateLimit({
   legacyHeaders: false
 });
 
+const reportLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 5,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'एक घण्टामा बढीमा ५ वटा report मात्र पठाउन सकिन्छ।' }
+});
+
+const reportSchema = z.object({
+  reporterName: z.string().trim().max(100).optional().default(''),
+  email: z.string().trim().max(254).email().or(z.literal('')).optional().default(''),
+  message: z.string().trim().min(15).max(2000)
+});
+
 const schema = z.object({
   id: z.string().trim().min(2).max(90).regex(/^[a-z0-9-]+$/i).optional(),
   name: z.string().trim().min(2).max(160),
@@ -94,6 +108,28 @@ router.get('/', async (req, res, next) => {
     );
 
     res.json({ items: rows.map(map) });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// POST: Report a possible medicine information issue (public, rate-limited).
+router.post('/:id/reports', reportLimit, async (req,res,next) => {
+  try {
+    const parsed = reportSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Report विवरण जाँच गर्नुहोस्। कम्तीमा १५ अक्षरको सन्देश आवश्यक छ।' });
+    }
+
+    const medicine = await pool.query('SELECT id FROM medicines WHERE id=$1', [req.params.id]);
+    if (!medicine.rowCount) return res.status(404).json({ error: 'औषधि भेटिएन।' });
+
+    const { reporterName, email, message } = parsed.data;
+    const result = await pool.query(
+      'INSERT INTO medicine_reports(medicine_id,reporter_name,reporter_email,message) VALUES($1,$2,$3,$4) RETURNING id,created_at',
+      [req.params.id, reporterName || null, email || null, message]
+    );
+    res.status(201).json({ report: result.rows[0], message: 'तपाईंको report प्राप्त भयो। धन्यवाद।' });
   } catch (e) {
     next(e);
   }
