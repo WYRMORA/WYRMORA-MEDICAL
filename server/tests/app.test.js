@@ -25,6 +25,13 @@ test('unsafe requests reject a foreign browser origin', async () => {
   assert.equal(response.status,403);
 });
 
+test('unsafe requests reject a missing browser origin', async () => {
+  const app = createApp();
+  const response = await request(app).post('/api/auth/login')
+    .send({email:'nobody@example.com',password:'bad'});
+  assert.equal(response.status,403);
+});
+
 test('registration validation rejects weak passwords', async () => {
   const app = createApp();
   const response = await request(app).post('/api/auth/register')
@@ -36,6 +43,8 @@ test('registration validation rejects weak passwords', async () => {
 
 test('medicine write endpoint requires an authenticated admin session', async () => {
   const app = createApp();
-  const response = await request(app).post('/api/medicines').send({name:'Test',nepali:'परीक्षण'});
+  const response = await request(app).post('/api/medicines')
+    .set('Origin','http://localhost:5173')
+    .send({name:'Test',nepali:'परीक्षण'});
   assert.equal(response.status,401);
 });
