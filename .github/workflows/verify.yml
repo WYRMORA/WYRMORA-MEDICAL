@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [feature/secure-admin-roles]
+    branches: [main]
 jobs:
   client-build:
     runs-on: ubuntu-latest
