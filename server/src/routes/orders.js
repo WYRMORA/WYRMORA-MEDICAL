@@ -6,21 +6,23 @@ router.use(requireAuth, allowRoles('customer'));
 
 router.post('/', async (req, res, next) => {
   const client = await pool.connect();
+  let transactionOpen = false;
   try {
     const shippingAddress = String(req.body?.shippingAddress || '').trim();
     if (shippingAddress.length < 10 || shippingAddress.length > 500) {
       return res.status(400).json({ error: 'Enter a complete delivery address.' });
     }
     await client.query('BEGIN');
+    transactionOpen = true;
     const cart = await client.query(
       `SELECT ci.product_id,ci.quantity,p.name,p.price,p.stock,p.seller_id
        FROM cart_items ci JOIN products p ON p.id=ci.product_id
        WHERE ci.user_id=$1 AND p.status='approved' AND p.is_active=true FOR UPDATE OF p`,
       [req.user.id]
     );
-    if (!cart.rowCount) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Your cart is empty.' }); }
+    if (!cart.rowCount) { await client.query('ROLLBACK'); transactionOpen = false; return res.status(400).json({ error: 'Your cart is empty.' }); }
     for (const item of cart.rows) {
-      if (item.stock < item.quantity) { await client.query('ROLLBACK'); return res.status(409).json({ error: `Insufficient stock for ${item.name}.` }); }
+      if (item.stock < item.quantity) { await client.query('ROLLBACK'); transactionOpen = false; return res.status(409).json({ error: `Insufficient stock for ${item.name}.` }); }
     }
     const total = cart.rows.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
     const order = await client.query(
@@ -36,11 +38,16 @@ router.post('/', async (req, res, next) => {
       );
       await client.query('UPDATE products SET stock=stock-$1 WHERE id=$2', [item.quantity,item.product_id]);
     }
+    await client.query(
+      'INSERT INTO order_status_history(order_id,actor_id,from_status,to_status,note) VALUES($1,$2,NULL,$3,$4)',
+      [order.rows[0].id, req.user.id, 'pending', 'Order placed']
+    );
     await client.query('DELETE FROM cart_items WHERE user_id=$1', [req.user.id]);
     await client.query('COMMIT');
+    transactionOpen = false;
     res.status(201).json({ order: order.rows[0], payment: { status: 'unpaid', message: 'Payment provider is not configured. No money was charged.' } });
   } catch (e) {
-    await client.query('ROLLBACK');
+    if (transactionOpen) await client.query('ROLLBACK');
     next(e);
   } finally { client.release(); }
 });
