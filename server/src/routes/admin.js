@@ -87,6 +87,39 @@ router.get('/audit-logs', async (req,res,next) => {
   } catch(e){next(e);}
 });
 
+router.get('/medicine-reports', async (req,res,next) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.id,r.medicine_id,r.reporter_name,r.reporter_email,r.message,r.status,
+              r.admin_note,r.created_at,r.updated_at,m.name AS medicine_name,m.nepali_name
+       FROM medicine_reports r
+       JOIN medicines m ON m.id=r.medicine_id
+       ORDER BY CASE r.status WHEN 'new' THEN 0 WHEN 'in_review' THEN 1 ELSE 2 END,
+                r.created_at DESC
+       LIMIT 300`
+    );
+    res.json({ reports: result.rows });
+  } catch (e) { next(e); }
+});
+
+router.patch('/medicine-reports/:id', async (req,res,next) => {
+  try {
+    const status = String(req.body?.status || '');
+    const adminNote = String(req.body?.adminNote || '').trim();
+    if (!['new','in_review','resolved'].includes(status))
+      return res.status(400).json({ error: 'Invalid report status.' });
+    if (adminNote.length > 1000)
+      return res.status(400).json({ error: 'Admin note धेरै लामो भयो।' });
+    const result = await pool.query(
+      'UPDATE medicine_reports SET status=$1,admin_note=$2,updated_at=NOW() WHERE id=$3 RETURNING id,status,admin_note,updated_at',
+      [status, adminNote || null, req.params.id]
+    );
+    if (!result.rowCount) return res.status(404).json({ error: 'Report भेटिएन।' });
+    await audit(req.user.id, 'medicine_report_updated', 'medicine_report', req.params.id, { status });
+    res.json({ report: result.rows[0] });
+  } catch (e) { next(e); }
+});
+
 router.get('/products/pending', async (req,res,next) => {
   try {
     const result=await pool.query(
