@@ -5,7 +5,7 @@ import { productSchema } from '../lib/validation.js';
 const router = Router();
 router.use(requireAuth);
 
-router.post('/profile', async (req, res, next) => {
+router.post('/profile', allowRoles('customer','seller'), async (req, res, next) => {
   try {
     const businessName = String(req.body?.businessName || '').trim();
     const description = String(req.body?.description || '').trim();
@@ -13,13 +13,24 @@ router.post('/profile', async (req, res, next) => {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      await client.query(`INSERT INTO sellers(user_id,business_name,description)
-        VALUES($1,$2,$3) ON CONFLICT(user_id) DO UPDATE SET business_name=EXCLUDED.business_name,description=EXCLUDED.description`,
-        [req.user.id,businessName,description]);
+      await client.query(
+        `INSERT INTO sellers(user_id,business_name,description)
+         VALUES($1,$2,$3)
+         ON CONFLICT(user_id) DO UPDATE SET
+           business_name=EXCLUDED.business_name,
+           description=EXCLUDED.description,
+           verification_status=CASE
+             WHEN sellers.business_name IS DISTINCT FROM EXCLUDED.business_name
+               OR sellers.description IS DISTINCT FROM EXCLUDED.description
+             THEN 'pending'
+             ELSE sellers.verification_status
+           END`,
+        [req.user.id,businessName,description]
+      );
       await client.query("UPDATE users SET role='seller' WHERE id=$1 AND role='customer'", [req.user.id]);
       await client.query('COMMIT');
     } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
-    res.status(201).json({ message: 'Seller profile saved. Super Admin verification is required before listing products.' });
+    res.status(201).json({ message: 'Seller profile saved. Any changed business details require Super Admin re-verification before listing products.' });
   } catch (e) { next(e); }
 });
 
