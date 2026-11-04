@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { requireAuth, allowRoles } from '../middleware/auth.js';
 const router = Router();
-router.use(requireAuth, allowRoles('admin'));
+router.use(requireAuth, allowRoles('super_admin','admin'));
 
 router.get('/products/pending', async (req,res,next) => {
   try {
