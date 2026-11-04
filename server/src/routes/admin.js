@@ -156,6 +156,93 @@ router.get('/orders', async (req,res,next) => {
   } catch(e){next(e);}
 });
 
+
+router.get('/orders/:id', async (req,res,next) => {
+  try {
+    const [order, items, history] = await Promise.all([
+      pool.query(
+        `SELECT o.id,o.order_number,o.total_amount,o.shipping_address,o.order_status,o.payment_status,o.created_at,
+                u.name AS buyer_name,u.email AS buyer_email
+         FROM orders o JOIN users u ON u.id=o.user_id WHERE o.id=$1`,
+        [req.params.id]
+      ),
+      pool.query(
+        'SELECT product_name,unit_price,quantity FROM order_items WHERE order_id=$1 ORDER BY id',
+        [req.params.id]
+      ),
+      pool.query(
+        `SELECT h.from_status,h.to_status,h.note,h.created_at,u.name AS actor_name
+         FROM order_status_history h LEFT JOIN users u ON u.id=h.actor_id
+         WHERE h.order_id=$1 ORDER BY h.created_at DESC`,
+        [req.params.id]
+      )
+    ]);
+    if (!order.rowCount) return res.status(404).json({error:'Order not found.'});
+    res.json({order:order.rows[0],items:items.rows,history:history.rows});
+  } catch(e){next(e);}
+});
+
+router.patch('/orders/:id/status', async (req,res,next) => {
+  const client = await pool.connect();
+  let transactionOpen = false;
+  try {
+    const status = String(req.body?.status || '');
+    const note = String(req.body?.note || '').trim();
+    const transitions = {
+      pending: ['confirmed','cancelled'],
+      confirmed: ['processing','cancelled'],
+      processing: ['shipped','cancelled'],
+      shipped: ['delivered'],
+      delivered: [],
+      cancelled: []
+    };
+    if (!Object.hasOwn(transitions,status) || note.length > 500)
+      return res.status(400).json({error:'Invalid order status or note.'});
+    await client.query('BEGIN');
+    transactionOpen = true;
+    const current = await client.query('SELECT id,order_status,payment_status FROM orders WHERE id=$1 FOR UPDATE',[req.params.id]);
+    if (!current.rowCount) {
+      await client.query('ROLLBACK'); transactionOpen = false;
+      return res.status(404).json({error:'Order not found.'});
+    }
+    const previous = current.rows[0];
+    if (!transitions[previous.order_status]?.includes(status)) {
+      await client.query('ROLLBACK'); transactionOpen = false;
+      return res.status(409).json({error:`Order cannot move from ${previous.order_status} to ${status}.`});
+    }
+    if (status === 'cancelled' && previous.payment_status === 'paid') {
+      await client.query('ROLLBACK'); transactionOpen = false;
+      return res.status(409).json({error:'Paid order cannot be cancelled here. Complete the verified refund workflow first.'});
+    }
+    if (status === 'cancelled') {
+      await client.query(
+        `UPDATE products p SET stock=p.stock + oi.quantity
+         FROM order_items oi
+         WHERE oi.order_id=$1 AND oi.product_id=p.id`,
+        [req.params.id]
+      );
+    }
+    const updated = await client.query(
+      'UPDATE orders SET order_status=$1 WHERE id=$2 RETURNING id,order_number,order_status,payment_status',
+      [status,req.params.id]
+    );
+    await client.query(
+      'INSERT INTO order_status_history(order_id,actor_id,from_status,to_status,note) VALUES($1,$2,$3,$4,$5)',
+      [req.params.id,req.user.id,previous.order_status,status,note || null]
+    );
+    await client.query(
+      'INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata) VALUES($1,$2,$3,$4,$5)',
+      [req.user.id,'order_status_changed','order',String(req.params.id),JSON.stringify({from:previous.order_status,to:status})]
+    );
+    await client.query('COMMIT');
+    transactionOpen = false;
+    res.json({order:updated.rows[0]});
+  } catch(e) {
+    if (transactionOpen) await client.query('ROLLBACK');
+    next(e);
+  } finally { client.release(); }
+});
+
 router.get('/tickets', async (req,res,next) => {
   try {
     const result=await pool.query(
