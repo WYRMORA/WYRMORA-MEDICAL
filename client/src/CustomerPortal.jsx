@@ -172,7 +172,7 @@ export default function CustomerPortal({ onClose }) {
       {view === 'shop' && <div className="customer-products">
         <p className="customer-note">यहाँ Super Admin बाट approved भएका partner products मात्र देखिन्छन्। Medicine purchase / pharmacy fulfillment हाल सक्रिय छैन।</p>
         {products.length ? products.map(product => <article className="customer-product" key={product.id}>
-          <div><strong>{product.name}</strong><p>{product.description}</p><small>{product.category} · Seller: {product.seller_name}</small></div>
+          <div><strong>{product.name} {product.is_test&&<span className="admin-tag">TEST ONLY · NO SALE</span>}</strong><p>{product.description}</p><small>{product.category} · Seller: {product.seller_name}</small></div>
           <div className="customer-product-action"><strong>{money(product.price)}</strong><small>{product.stock} उपलब्ध</small><button disabled={product.stock < 1} onClick={() => addToCart(product)}>Add to cart</button></div>
         </article>) : <div className="empty"><h3>अहिले कुनै approved product छैन</h3><p>Partner product approve भएपछि यहाँ देखिनेछ।</p></div>}
       </div>}
@@ -180,7 +180,7 @@ export default function CustomerPortal({ onClose }) {
       {view === 'cart' && <div className="customer-cart">
         <h3>तपाईंको Cart</h3>
         {cart.map(item => <div className="customer-cart-row" key={item.product_id}>
-          <div><strong>{item.name}</strong><small>{money(item.price)} × {item.quantity}</small></div>
+          <div><strong>{item.name} {item.is_test&&<span className="admin-tag">TEST ONLY</span>}</strong><small>{money(item.price)} × {item.quantity}</small></div>
           <div><strong>{money(Number(item.price) * Number(item.quantity))}</strong><button onClick={() => removeFromCart(item.product_id)}>Remove</button></div>
         </div>)}
         {!cart.length ? <p>Cart खाली छ। Partner Products बाट item थप्नुहोस्।</p> : <>
@@ -195,7 +195,7 @@ export default function CustomerPortal({ onClose }) {
       {view === 'orders' && <div className="customer-orders">
         <h3>My Orders</h3>
         {orders.map(order => <article className="customer-order" key={order.id}>
-          <div><strong>{order.order_number}</strong><small>{new Date(order.created_at).toLocaleString()}</small></div>
+          <div><strong>{order.order_number} {order.is_test&&<span className="admin-tag">TEST ONLY</span>}</strong><small>{new Date(order.created_at).toLocaleString()}</small></div>
           <div><strong>{money(order.total_amount)}</strong><small>Order: {order.order_status} · Payment: {order.payment_status}</small></div>
         </article>)}
         {!orders.length && <p>अहिलेसम्म कुनै order छैन।</p>}
