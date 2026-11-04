@@ -6,7 +6,7 @@ services:
     plan: free
     region: singapore
     buildCommand: npm install && npm run migrate --prefix server
-    startCommand: npm start
+    startCommand: npm start --prefix server
     healthCheckPath: /api/health
     autoDeployTrigger: commit
     envVars:
