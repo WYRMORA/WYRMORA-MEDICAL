@@ -1,6 +1,8 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
+import AdminConsole from './AdminConsole.jsx';
+
 
 const API = '/api/medicines';
 
@@ -206,7 +208,6 @@ export default function App() {
   const [tab, setTab] = useState('home');
 
   const [showAdmin, setShowAdmin] = useState(false);
-  const [adminKey, setAdminKey] = useState('');
   const [notice, setNotice] = useState('');
   const [noticeType, setNoticeType] = useState('info');
 
@@ -328,11 +329,6 @@ export default function App() {
     event.preventDefault();
     setNotice('');
 
-    if (!adminKey.trim()) {
-      showMessage('Admin API key राख्नुहोस्।', 'error');
-      return;
-    }
-
     if (
       !form.name.trim() ||
       !form.nepali.trim() ||
@@ -367,8 +363,7 @@ export default function App() {
       const response = await fetch(API, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-admin-key': adminKey.trim()
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
@@ -443,8 +438,7 @@ export default function App() {
         {
           method: 'PATCH',
           headers: {
-            'Content-Type': 'application/json',
-            'x-admin-key': adminKey.trim()
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             status: verificationForm.status,
@@ -563,6 +557,7 @@ export default function App() {
         </section>
 
         {showAdmin && (
+          <AdminConsole onClose={() => setShowAdmin(false)}>
           <section className="admin panel">
             <div className="section-head">
               <div>
@@ -822,9 +817,10 @@ export default function App() {
               </p>
             )}
           </section>
+          </AdminConsole>
         )}
 
-        {tab === 'about' ? (
+        {tab === 'about' ?
           <section className="about panel">
             <h2>हाम्रो बारेमा</h2>
             <p>

@@ -100,7 +100,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // POST: Add or update medicine
-router.post('/', requireAuth, allowRoles('super_admin','editor','admin'), adminWriteLimit, async (req,res,next) => {
+router.post('/', requireAuth, allowRoles('super_admin','editor'), adminWriteLimit, async (req,res,next) => {
   try {
 
     const parsed = schema.safeParse(req.body);
@@ -164,6 +164,7 @@ router.post('/', requireAuth, allowRoles('super_admin','editor','admin'), adminW
       ]
     );
 
+    await pool.query('INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata) VALUES($1,$2,$3,$4,$5)', [req.user.id, d.id ? 'medicine_updated' : 'medicine_created', 'medicine', id, JSON.stringify({ name: d.name })]);
     res.status(201).json({ item: map(rows[0]) });
   } catch (e) {
     next(e);
@@ -222,6 +223,7 @@ router.patch('/:id/verification', requireAuth, allowRoles('super_admin','editor'
       });
     }
 
+    await pool.query('INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata) VALUES($1,$2,$3,$4,$5)', [req.user.id, 'medicine_verification_updated', 'medicine', req.params.id, JSON.stringify({ status: d.status, pharmacistName: d.pharmacistName || null })]);
     res.json({ item: map(rows[0]) });
   } catch (e) {
     next(e);
