@@ -82,7 +82,7 @@ The previous WYRMORA marketplace modules remain in the source tree (buyer/seller
 
 - Deploy the client and API behind HTTPS; set `COOKIE_SECURE=true` and exact `CLIENT_ORIGIN`.
 - Set strong unique secrets in the deployment secret manager; rotate them if exposed.
-- Provision managed PostgreSQL, run migrations as a release step, enable encrypted backups and test restore.
+- Provision managed PostgreSQL, run migrations as a release step, enable encrypted backups and test restore. Follow [the database backup and recovery runbook](./docs/DATABASE-BACKUP-RECOVERY.md).
 - Restrict admin API access, use MFA/SSO or a hardened admin identity system, rate-limit writes and add audit logs.
 - Add clinical review metadata, price provenance and a repeatable review/expiry process.
 - Run `npm test`, `npm run build`, dependency audit, database-backed integration tests, accessibility checks and penetration testing.
@@ -94,7 +94,6 @@ The previous WYRMORA marketplace modules remain in the source tree (buyer/seller
 - `npm start` — API server
 - `npm run db:migrate` — database migrations
 - `npm test` — server tests
-
 
 ## Vercel + Render deployment
 
