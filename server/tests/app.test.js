@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
+import { emailSchema } from '../src/lib/validation.js';
 
 test('health endpoint reports API status', async () => {
   const app = createApp();
@@ -47,4 +48,9 @@ test('medicine write endpoint requires an authenticated admin session', async ()
     .set('Origin','http://localhost:5173')
     .send({name:'Test',nepali:'परीक्षण'});
   assert.equal(response.status,401);
+});
+
+test('shared email validation accepts normal addresses and rejects malformed input', () => {
+  assert.equal(emailSchema.safeParse('admin@example.com').success,true);
+  assert.equal(emailSchema.safeParse('admin example.com').success,false);
 });
