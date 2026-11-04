@@ -26,8 +26,8 @@ router.post('/login',async(req,res,next)=>{try{
  setSession(res,user);delete user.password_hash;res.json({user});
 }catch(err){next(err);}});
 router.post('/bootstrap-super-admin',async(req,res,next)=>{
- const expected=process.env.ADMIN_BOOTSTRAP_TOKEN||'',supplied=String(req.get('x-bootstrap-token')||'');
- if(!expected||supplied.length!==expected.length||!timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))return res.status(403).json({error:'Bootstrap is not available.'});
+ const expected=Buffer.from(process.env.ADMIN_BOOTSTRAP_TOKEN||''),supplied=Buffer.from(String(req.get('x-bootstrap-token')||''));
+ if(!expected.length||supplied.length!==expected.length||!timingSafeEqual(supplied,expected))return res.status(403).json({error:'Bootstrap is not available.'});
  try{
   const {name,email,password}=req.body||{},cleanName=String(name||'').trim(),cleanEmail=String(email||'').trim().toLowerCase();
   if(cleanName.length<2||cleanName.length>80||! /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(cleanEmail)||String(password||'').length<12||String(password).length>72)return res.status(400).json({error:'Provide a name, valid email, and password of 12–72 characters.'});

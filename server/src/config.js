@@ -18,6 +18,6 @@ export const config = {
   jwtSecret,
   clientOrigins: (process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',').map(value => value.trim()).filter(Boolean),
   cookieName: process.env.COOKIE_NAME || 'wyrmora_session',
-  cookieSecure: process.env.COOKIE_SECURE === 'true',
+  cookieSecure: process.env.COOKIE_SECURE === 'true' || (process.env.COOKIE_SECURE !== 'false' && process.env.NODE_ENV === 'production'),
   nodeEnv: process.env.NODE_ENV || 'development'
 };
