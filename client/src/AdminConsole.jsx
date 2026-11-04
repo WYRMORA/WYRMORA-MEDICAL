@@ -10,7 +10,8 @@ export default function AdminConsole({children,onClose}) {
   const [user,setUser]=useState(null),[loading,setLoading]=useState(true);
   const [email,setEmail]=useState(''),[password,setPassword]=useState('');
   const [error,setError]=useState(''),[busy,setBusy]=useState(false);
-  const [overview,setOverview]=useState(null),[users,setUsers]=useState([]),[logs,setLogs]=useState([]);\n  const [products,setProducts]=useState([]),[orders,setOrders]=useState([]),[tickets,setTickets]=useState([]);
+  const [overview,setOverview]=useState(null),[users,setUsers]=useState([]),[logs,setLogs]=useState([]);
+  const [products,setProducts]=useState([]),[orders,setOrders]=useState([]),[tickets,setTickets]=useState([]);
   const [name,setName]=useState(''),[editorEmail,setEditorEmail]=useState(''),[editorPassword,setEditorPassword]=useState('');
   const [tab,setTab]=useState('overview');
   const [bootstrap,setBootstrap]=useState(false),[token,setToken]=useState('');
@@ -20,12 +21,15 @@ export default function AdminConsole({children,onClose}) {
     setOverview(o.overview);setUsers(u.users);setLogs(l.logs);
   }
   useEffect(()=>{let live=true;api('/api/auth/me').then(d=>{if(live)setUser(d.user)}).catch(()=>{}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[]);
-  useEffect(()=>{if(user?.role==='super_admin')refresh().catch(e=>setError(e.message))},[user]);\n  useEffect(()=>{if(user?.role!=='super_admin')return;let live=true;(async()=>{try{if(tab==='products'){const d=await api('/api/admin/products/pending');if(live)setProducts(d.products)}if(tab==='orders'){const d=await api('/api/admin/orders');if(live)setOrders(d.orders)}if(tab==='tickets'){const d=await api('/api/admin/tickets');if(live)setTickets(d.tickets)}}catch(e){if(live)setError(e.message)}})();return()=>{live=false}},[user,tab]);
+  useEffect(()=>{if(user?.role==='super_admin')refresh().catch(e=>setError(e.message))},[user]);
+  useEffect(()=>{if(user?.role!=='super_admin')return;let live=true;(async()=>{try{if(tab==='products'){const d=await api('/api/admin/products/pending');if(live)setProducts(d.products)}if(tab==='orders'){const d=await api('/api/admin/orders');if(live)setOrders(d.orders)}if(tab==='tickets'){const d=await api('/api/admin/tickets');if(live)setTickets(d.tickets)}}catch(e){if(live)setError(e.message)}})();return()=>{live=false}},[user,tab]);
   async function login(e){e.preventDefault();setBusy(true);setError('');try{const d=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email,password})});setUser(d.user);setPassword('')}catch(e){setError(e.message)}finally{setBusy(false)}}
   async function bootstrapAdmin(e){e.preventDefault();setBusy(true);setError('');try{const d=await api('/api/auth/bootstrap-super-admin',{method:'POST',headers:{'x-bootstrap-token':token},body:JSON.stringify({name:bootstrapName,email:bootstrapEmail,password:bootstrapPassword})});setUser(d.user);setBootstrapPassword('');setToken('')}catch(e){setError(e.message)}finally{setBusy(false)}}
   async function logout(){try{await api('/api/auth/logout',{method:'POST'})}finally{setUser(null);setOverview(null);setUsers([]);setLogs([])}}
   async function createEditor(e){e.preventDefault();setBusy(true);setError('');try{await api('/api/admin/editors',{method:'POST',body:JSON.stringify({name,email:editorEmail,password:editorPassword})});setName('');setEditorEmail('');setEditorPassword('');await refresh()}catch(e){setError(e.message)}finally{setBusy(false)}}
-  async function toggleEditor(account){setError('');try{await api(`/api/admin/users/${account.id}/status`,{method:'PATCH',body:JSON.stringify({isActive:!account.is_active})});await refresh()}catch(e){setError(e.message)}}\n  async function reviewProduct(product,status){setError('');try{await api(`/api/admin/products/${product.id}/approve`,{method:'PATCH',body:JSON.stringify({status})});setProducts(items=>items.filter(x=>x.id!==product.id));await refresh()}catch(e){setError(e.message)}}\n  async function setTicketStatus(ticket,status){setError('');try{await api(`/api/admin/tickets/${ticket.id}`,{method:'PATCH',body:JSON.stringify({status})});setTickets(items=>items.map(x=>x.id===ticket.id?{...x,status}:x))}catch(e){setError(e.message)}}
+  async function toggleEditor(account){setError('');try{await api(`/api/admin/users/${account.id}/status`,{method:'PATCH',body:JSON.stringify({isActive:!account.is_active})});await refresh()}catch(e){setError(e.message)}}
+  async function reviewProduct(product,status){setError('');try{await api(`/api/admin/products/${product.id}/approve`,{method:'PATCH',body:JSON.stringify({status})});setProducts(items=>items.filter(x=>x.id!==product.id));await refresh()}catch(e){setError(e.message)}}
+  async function setTicketStatus(ticket,status){setError('');try{await api(`/api/admin/tickets/${ticket.id}`,{method:'PATCH',body:JSON.stringify({status})});setTickets(items=>items.map(x=>x.id===ticket.id?{...x,status}:x))}catch(e){setError(e.message)}}
   if(loading)return <section className="admin panel"><p>Admin session जाँच हुँदैछ...</p></section>;
   if(!user)return <section className="admin panel admin-auth">
     <div className="section-head"><div><span className="admin-tag">SECURE ADMIN ACCESS</span><h2>{bootstrap?'First Super Admin Setup':'Admin Login'}</h2></div><button type="button" onClick={onClose}>Close</button></div>
