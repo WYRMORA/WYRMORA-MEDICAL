@@ -9,7 +9,17 @@ async function request(path, options = {}) {
   });
   if (response.status === 204) return null;
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+  if (!response.ok) {
+    const fieldErrors = data.details?.fieldErrors || {};
+    const formErrors = data.details?.formErrors || [];
+    const messages = Object.entries(fieldErrors).flatMap(([field, errors]) =>
+      (errors || []).map(message => `${field}: ${message}`)
+    );
+    messages.push(...formErrors);
+    throw new Error(messages.length
+      ? `${data.error || 'Request failed'} — ${messages.join('; ')}`
+      : (data.error || `Request failed (${response.status})`));
+  }
   return data;
 }
 
