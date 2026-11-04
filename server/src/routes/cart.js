@@ -10,7 +10,9 @@ router.get('/', async (req, res, next) => {
     const result = await pool.query(
       `SELECT ci.product_id,ci.quantity,p.name,p.price,p.stock,p.image_url,p.is_test
        FROM cart_items ci JOIN products p ON p.id=ci.product_id
+       LEFT JOIN sellers s ON s.user_id=p.seller_id
        WHERE ci.user_id=$1 AND p.status='approved' AND p.is_active=true
+         AND (p.is_test=true OR s.verification_status='verified')
          AND (p.is_test=false OR $2::boolean=true)
        ORDER BY ci.created_at DESC`, [req.user.id, config.enableTestOrderWorkflow]
     );
@@ -30,9 +32,10 @@ router.post('/items', async (req, res, next) => {
     await client.query('BEGIN');
     transactionOpen = true;
     const product = await client.query(
-      `SELECT id,stock FROM products
-       WHERE id=$1 AND status='approved' AND is_active=true
-         AND (is_test=false OR $2::boolean=true) FOR UPDATE`,
+      `SELECT p.id,p.stock FROM products p LEFT JOIN sellers s ON s.user_id=p.seller_id
+       WHERE p.id=$1 AND p.status='approved' AND p.is_active=true
+         AND (p.is_test=true OR s.verification_status='verified')
+         AND (p.is_test=false OR $2::boolean=true) FOR UPDATE OF p`,
       [productId, config.enableTestOrderWorkflow]
     );
     if (!product.rowCount) {
