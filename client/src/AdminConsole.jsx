@@ -64,7 +64,7 @@ export default function AdminConsole({children,onClose}) {
   </section>;
   return <section className="admin panel admin-console">
     <div className="section-head"><div><span className="admin-tag">{user.role==='super_admin'?'SUPER ADMIN':'EDITOR'} CONSOLE</span><h2>Welcome, {user.name}</h2><p>{user.email} · {user.role.replace('_',' ').toUpperCase()}</p></div><div className="admin-actions"><button onClick={logout}>Logout</button><button onClick={onClose}>Close</button></div></div>
-    {error&&<p className="notice error">{error}</p>}
+    {error&&<p className="notice error">{error}</p>}{message&&<p className="notice success">{message}</p>}
     {user.role==='super_admin'&&<>
       <nav className="admin-tabs">
         {['overview','editors','products','orders','tickets','safety','activity'].map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{({overview:'Overview',editors:'Editor Accounts',products:'Pending Products',orders:'Orders',tickets:'Support Tickets',safety:'Medicine Reports',activity:'Audit Logs'})[t]}</button>)}
