@@ -2,11 +2,15 @@ import { config } from '../config.js';
 
 export function originGuard(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+
   const origin = req.get('origin');
-  // Non-browser clients may omit Origin; browser requests must match the configured origin.
-  if (origin && !config.clientOrigins.includes(origin)) {
-    return res.status(403).json({ error: 'Request origin is not allowed.' });
+  // This API authenticates browser mutations with an HttpOnly session cookie.
+  // Require an explicit allowlisted Origin on every state-changing request so
+  // requests with a missing Origin cannot bypass the browser-origin check.
+  if (!origin || !config.clientOrigins.includes(origin)) {
+    return res.status(403).json({ error: 'Request origin is missing or not allowed.' });
   }
+
   next();
 }
 
