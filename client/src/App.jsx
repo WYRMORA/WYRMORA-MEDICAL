@@ -405,11 +405,6 @@ export default function App() {
     event.preventDefault();
     setNotice('');
 
-    if (!adminKey.trim()) {
-      showMessage('Admin API key राख्नुहोस्।', 'error');
-      return;
-    }
-
     if (!verificationForm.medicineId) {
       showMessage('औषधि छान्नुहोस्।', 'error');
       return;
@@ -566,21 +561,7 @@ export default function App() {
               </div>
             </div>
 
-            <p>
-              Admin API key राखेर नयाँ औषधि थप्नुहोस्, पुरानो
-              विवरण Update गर्नुहोस् वा Pharmacist Verification गर्नुहोस्।
-            </p>
-
-            <label>
-              Admin API Key
-              <input
-                type="password"
-                value={adminKey}
-                onChange={event => setAdminKey(event.target.value)}
-                placeholder="Enter admin API key"
-                autoComplete="off"
-              />
-            </label>
+            <p>Login भएको Super Admin वा Editor ले मात्र औषधि व्यवस्थापन गर्न सक्छ।</p>
 
             <hr />
 
@@ -820,7 +801,7 @@ export default function App() {
           </AdminConsole>
         )}
 
-        {tab === 'about' ?
+        {tab === 'about' ? (
           <section className="about panel">
             <h2>हाम्रो बारेमा</h2>
             <p>

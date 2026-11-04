@@ -172,7 +172,7 @@ router.post('/', requireAuth, allowRoles('super_admin','editor'), adminWriteLimi
 });
 
 // PATCH: Pharmacist verification
-router.patch('/:id/verification', requireAuth, allowRoles('super_admin','editor','admin'), adminWriteLimit, async (req,res,next) => {
+router.patch('/:id/verification', requireAuth, allowRoles('super_admin','editor'), adminWriteLimit, async (req,res,next) => {
   try {
 
     const parsed = verificationSchema.safeParse(req.body);
