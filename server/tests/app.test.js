@@ -212,6 +212,7 @@ test('transaction routes forward database connection failures to the JSON error 
   } finally {
     pool.query = originalQuery;
     pool.connect = originalConnect;
+    config.enableMarketplaceOrders = originalMarketplaceFlag;
   }
 });
 
