@@ -10,7 +10,7 @@ export function hashToken(token) {
 }
 
 export function isEmailDeliveryConfigured() {
-  return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+  return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM && /^https:\\/\\//i.test(String(process.env.PUBLIC_APP_URL || '')));
 }
 
 export async function sendAccountEmail({ to, subject, html, text }) {
