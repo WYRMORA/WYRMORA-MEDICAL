@@ -53,9 +53,9 @@ async function readResponse(response) {
 
 function verificationBadge(status) {
   const badges = {
-    verified: ['✓ Verified', 'verified'],
-    under_review: ['◷ Under Review', 'unverified'],
-    pending: ['○ Pending', 'unverified']
+    verified: ['✓ Pharmacist reviewed', 'verified'],
+    under_review: ['◷ समीक्षामा', 'unverified'],
+    pending: ['○ समीक्षा बाँकी', 'unverified']
   };
 
   const [label, className] = badges[status] || badges.pending;
@@ -397,7 +397,7 @@ export default function App() {
             </span>
 
             <h1>
-              औषधिबारे सही जानकारी,
+              औषधिबारे बुझ्न सजिलो जानकारी,
               <br />
               <i>नेपाली भाषामा।</i>
             </h1>
@@ -410,7 +410,7 @@ export default function App() {
             <div className="trust">
               <span>✓ सरल नेपाली</span>
               <span>✓ सावधानीसहित</span>
-              <span>✓ जानकारीमूलक</span>
+              <span>✓ समीक्षा स्थिति स्पष्ट</span>
             </div>
           </div>
 
@@ -812,7 +812,8 @@ export default function App() {
             शैक्षिक प्रयोजनका लागि मात्र हो। यो चिकित्सकीय
             सल्लाह, निदान वा उपचारको विकल्प होइन। कुनै पनि
             औषधि प्रयोग गर्नुअघि योग्य चिकित्सक वा फार्मासिस्टसँग
-            परामर्श गर्नुहोस्।
+            परामर्श गर्नुहोस्। सूचीमा “समीक्षा बाँकी” वा “समीक्षामा”
+            देखिएका विवरणहरू Pharmacist बाट clinically verified भएका छैनन्।
           </p>
         </section>
       </main>
