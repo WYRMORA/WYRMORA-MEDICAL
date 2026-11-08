@@ -155,6 +155,29 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
       });
     assert.equal(reapplication.status,201);
 
+    const approvedApplication = await request(app)
+      .patch(`/api/admin/pharmacists/applications/${reapplication.body.application.id}`)
+      .set('Cookie', adminCookie)
+      .set('Origin', config.clientOrigins[0])
+      .send({ decision:'approved', notes:'Provisional account created pending private credential review.' });
+    assert.equal(approvedApplication.status,200);
+    const provisional = await pool.query(
+      `SELECT p.is_credential_active,p.credential_verified_at,p.credential_verified_by,u.id
+       FROM pharmacist_profiles p JOIN users u ON u.id=p.user_id WHERE u.email=$1`,
+      [pharmacistEmail]
+    );
+    assert.equal(provisional.rowCount,1);
+    assert.equal(provisional.rows[0].is_credential_active,false);
+    assert.equal(provisional.rows[0].credential_verified_at,null);
+    assert.equal(provisional.rows[0].credential_verified_by,null);
+    const provisionalToken=jwt.sign({email:pharmacistEmail},config.jwtSecret,{
+      subject:String(provisional.rows[0].id),issuer:'wyrmora-api',audience:'wyrmora-client',expiresIn:'8h'
+    });
+    const blockedClinicalAccess=await request(app).get('/api/pharmacist/medicines')
+      .set('Cookie',`${config.cookieName}=${provisionalToken}`);
+    assert.equal(blockedClinicalAccess.status,403);
+    await pool.query('DELETE FROM users WHERE id=$1',[provisional.rows[0].id]);
+
     // A later deployment re-runs the migration chain. A rejected application
     // and its active reapplication must not make migration 008 fail.
     const serverDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
