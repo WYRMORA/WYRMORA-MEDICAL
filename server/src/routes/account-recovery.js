@@ -51,20 +51,29 @@ router.post('/email-verification/request', limiter, async (req, res, next) => {
 });
 
 router.post('/email-verification/confirm', limiter, async (req, res, next) => {
+  const token = String(req.body?.token || '');
+  if (token.length < 32 || token.length > 128) return res.status(400).json({ error: 'This verification link is invalid or expired.' });
+  const client = await pool.connect();
   try {
-    const token = String(req.body?.token || '');
-    if (token.length < 32 || token.length > 128) return res.status(400).json({ error: 'This verification link is invalid or expired.' });
-    const result = await pool.query(
-      `UPDATE users SET email_verified_at=NOW(),updated_at=NOW()
-       WHERE id=(SELECT user_id FROM account_tokens WHERE token_hash=$1 AND purpose='email_verification'
-         AND consumed_at IS NULL AND expires_at>NOW() FOR UPDATE)
-       RETURNING id`,
+    await client.query('BEGIN');
+    const found = await client.query(
+      `SELECT id,user_id FROM account_tokens
+       WHERE token_hash=$1 AND purpose='email_verification' AND consumed_at IS NULL AND expires_at>NOW()
+       FOR UPDATE`,
       [hashToken(token)]
     );
-    if (!result.rowCount) return res.status(400).json({ error: 'This verification link is invalid or expired.' });
-    await pool.query("UPDATE account_tokens SET consumed_at=NOW() WHERE user_id=$1 AND purpose='email_verification' AND consumed_at IS NULL", [result.rows[0].id]);
+    if (!found.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'This verification link is invalid or expired.' });
+    }
+    await client.query('UPDATE users SET email_verified_at=NOW(),updated_at=NOW() WHERE id=$1', [found.rows[0].user_id]);
+    await client.query("UPDATE account_tokens SET consumed_at=NOW() WHERE user_id=$1 AND purpose='email_verification' AND consumed_at IS NULL", [found.rows[0].user_id]);
+    await client.query('COMMIT');
     return res.json({ message: 'Email address verified.' });
-  } catch (error) { next(error); }
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    return next(error);
+  } finally { client.release(); }
 });
 
 router.post('/password-reset/request', limiter, async (req, res, next) => {
