@@ -8,7 +8,7 @@ router.use(requireAuth);
 router.get('/profile', allowRoles('customer','seller'), async (req,res,next) => {
   try {
     const result = await pool.query(
-      'SELECT id,business_name,description,verification_status,created_at FROM sellers WHERE user_id=$1',
+      'SELECT id,business_name,description,verification_status,credential_asset_id,created_at FROM sellers WHERE user_id=$1',
       [req.user.id]
     );
     res.json({ profile: result.rows[0] || null });
