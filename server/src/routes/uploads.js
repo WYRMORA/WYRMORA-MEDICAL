@@ -56,6 +56,43 @@ router.post('/:id/complete', async (req,res,next) => {
   } catch (e) { next(e); }
 });
 
+router.post('/:id/attach', async (req,res,next) => {
+  try {
+    const result=await pool.query(
+      "SELECT id,purpose FROM private_assets WHERE id=$1 AND owner_user_id=$2 AND status='uploaded'",
+      [req.params.id,req.user.id]
+    );
+    if(!result.rowCount)return res.status(404).json({error:'Uploaded private file not found.'});
+    const {purpose}=result.rows[0];
+    if(purpose==='product_image' && req.user.role==='seller'){
+      const productId=String(req.body?.productId||'');
+      const attached=await pool.query(
+        "UPDATE products SET image_asset_id=$1,image_url=$2,updated_at=NOW() WHERE id=$3 AND seller_id=$4 RETURNING id",
+        [req.params.id,`/api/products/${productId}/image`,productId,req.user.id]
+      );
+      if(!attached.rowCount)return res.status(404).json({error:'Your product listing was not found.'});
+      return res.json({message:'Product image attached.'});
+    }
+    if(purpose==='seller_credential' && req.user.role==='seller'){
+      const attached=await pool.query(
+        "UPDATE sellers SET credential_asset_id=$1,verification_status='pending' WHERE user_id=$2 RETURNING id",
+        [req.params.id,req.user.id]
+      );
+      if(!attached.rowCount)return res.status(404).json({error:'Seller profile not found.'});
+      return res.json({message:'Seller credential submitted for administrator review.'});
+    }
+    if(purpose==='pharmacist_credential' && req.user.role==='pharmacist'){
+      const attached=await pool.query(
+        "UPDATE pharmacist_profiles SET credential_asset_id=$1,is_credential_active=false WHERE user_id=$2 RETURNING user_id",
+        [req.params.id,req.user.id]
+      );
+      if(!attached.rowCount)return res.status(404).json({error:'Pharmacist profile not found.'});
+      return res.json({message:'Credential document submitted. Pharmacist access is paused until Super Admin re-verifies it.'});
+    }
+    return res.status(403).json({error:'This file cannot be attached to this account.'});
+  }catch(e){next(e);}
+});
+
 router.get('/:id/download', allowRoles('seller','pharmacist','super_admin'), async (req,res,next) => {
   try {
     const result = await pool.query(
