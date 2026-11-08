@@ -135,7 +135,7 @@ export default function CustomerPortal({ onClose }) {
   }
 
   const total = useMemo(
-    () => cart.reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0),
+    () => cart.filter(item => item.available).reduce((sum, item) => sum + Number(item.price) * Number(item.quantity), 0),
     [cart]
   );
 
@@ -186,14 +186,15 @@ export default function CustomerPortal({ onClose }) {
       {view === 'cart' && <div className="customer-cart">
         <h3>तपाईंको Cart</h3>
         {cart.map(item => <div className="customer-cart-row" key={item.product_id}>
-          <div><strong>{item.name} {item.is_test&&<span className="admin-tag">TEST ONLY</span>}</strong><small>{money(item.price)} × {item.quantity}</small></div>
+          <div><strong>{item.name} {item.is_test&&<span className="admin-tag">TEST ONLY</span>} {!item.available&&<span className="admin-tag">UNAVAILABLE · REMOVE</span>}</strong><small>{money(item.price)} × {item.quantity}</small></div>
           <div><strong>{money(Number(item.price) * Number(item.quantity))}</strong><button onClick={() => removeFromCart(item.product_id)}>Remove</button></div>
         </div>)}
         {!cart.length ? <p>Cart खाली छ। Partner Products बाट item थप्नुहोस्।</p> : <>
+          {cart.some(item => !item.available) && <p className="customer-note">केही सामान उपलब्ध छैनन्। Checkout अघि ती सामान Remove गर्नुहोस्।</p>}
           <div className="customer-total"><strong>कुल जम्मा</strong><strong>{money(total)}</strong></div>
           {commerceEnabled ? <form onSubmit={placeOrder}>
             <label>Delivery Address<textarea value={address} onChange={e => setAddress(e.target.value)} minLength="10" maxLength="500" rows="3" placeholder="पूरा delivery address लेख्नुहोस्..." required /></label>
-            <button className="primary" disabled={busy}>{busy ? 'Submitting...' : 'Place Order Request'}</button>
+            <button className="primary" disabled={busy || cart.some(item => !item.available)}>{busy ? 'Submitting...' : 'Place Order Request'}</button>
           </form> : <p className="customer-note">Checkout हाल बन्द छ। पुरानो cart बाट सामान हटाउन सक्नुहुन्छ; कानुनी तथा payment approval नआएसम्म order गर्न मिल्दैन।</p>}
         </>}
       </div>}
