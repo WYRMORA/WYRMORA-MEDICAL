@@ -54,8 +54,9 @@ router.post('/email-verification/request', limiter, async (req, res, next) => {
 router.post('/email-verification/confirm', limiter, async (req, res, next) => {
   const token = String(req.body?.token || '');
   if (token.length < 32 || token.length > 128) return res.status(400).json({ error: 'This verification link is invalid or expired.' });
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
     const found = await client.query(
       `SELECT id,user_id FROM account_tokens
@@ -72,9 +73,9 @@ router.post('/email-verification/confirm', limiter, async (req, res, next) => {
     await client.query('COMMIT');
     return res.json({ message: 'Email address verified.' });
   } catch (error) {
-    await client.query('ROLLBACK').catch(() => {});
+    if (client) await client.query('ROLLBACK').catch(() => {});
     return next(error);
-  } finally { client.release(); }
+  } finally { client?.release(); }
 });
 
 router.post('/password-reset/request', limiter, async (req, res, next) => {
@@ -97,8 +98,9 @@ router.post('/password-reset/confirm', limiter, async (req, res, next) => {
       !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
     return res.status(400).json({ error: 'The reset link or new password is invalid.' });
   }
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
     await client.query('BEGIN');
     const found = await client.query(
       `SELECT id,user_id FROM account_tokens
@@ -116,9 +118,9 @@ router.post('/password-reset/confirm', limiter, async (req, res, next) => {
     await client.query('COMMIT');
     return res.json({ message: 'Password updated. Please sign in again.' });
   } catch (error) {
-    await client.query('ROLLBACK').catch(() => {});
+    if (client) await client.query('ROLLBACK').catch(() => {});
     return next(error);
-  } finally { client.release(); }
+  } finally { client?.release(); }
 });
 
 export default router;
