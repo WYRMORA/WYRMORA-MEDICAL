@@ -176,7 +176,8 @@ router.patch('/sellers/:id/verification', async (req,res,next) => {
     if(status==='verified'){
       const credential=await pool.query(
         `SELECT a.id FROM sellers s
-         JOIN private_assets a ON a.id=s.credential_asset_id AND a.status='uploaded' AND a.purpose='seller_credential'
+         JOIN private_assets a ON a.id=s.credential_asset_id AND a.owner_user_id=s.user_id
+           AND a.status='uploaded' AND a.purpose='seller_credential'
          WHERE s.id=$1`,
         [req.params.id]
       );
@@ -519,7 +520,6 @@ router.patch('/pharmacists/accounts/:id/credential', async (req,res,next) => {
       `SELECT a.id FROM pharmacist_profiles p
        JOIN private_assets a ON a.id=p.credential_asset_id AND a.owner_user_id=p.user_id
          AND a.status='uploaded' AND a.purpose='pharmacist_credential'
-       JOIN users u ON u.id=p.user_id AND u.is_active=true
        WHERE p.user_id=$1`,
       [req.params.id]
     );
@@ -539,6 +539,16 @@ router.patch('/pharmacists/accounts/:id/status', async (req,res,next) => {
   try {
     const active = req.body?.active;
     if (typeof active !== 'boolean') return res.status(400).json({ error: 'active true वा false हुनुपर्छ।' });
+    if(active){
+      const verified=await pool.query(
+        `SELECT p.user_id FROM pharmacist_profiles p
+         JOIN private_assets a ON a.id=p.credential_asset_id AND a.owner_user_id=p.user_id
+           AND a.status='uploaded' AND a.purpose='pharmacist_credential'
+         WHERE p.user_id=$1 AND p.credential_verified_at IS NOT NULL`,
+        [req.params.id]
+      );
+      if(!verified.rowCount)return res.status(409).json({error:'A current uploaded credential must be reviewed by Super Admin before reactivation.'});
+    }
     const result = await pool.query(
       `UPDATE users u SET is_active=$1,updated_at=NOW()
        FROM pharmacist_profiles p
