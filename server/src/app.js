@@ -17,6 +17,9 @@ import { originGuard, notFound, errorHandler } from './middleware/security.js';
 
 export function createApp() {
   const app = express();
+  // Render runs the app behind one trusted reverse proxy.
+  // Trust only that proxy hop so express-rate-limit can read the client IP safely.
+  app.set('trust proxy', 1);
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(cors({ origin: config.clientOrigins, credentials: true, methods: ['GET','POST','PATCH','DELETE','OPTIONS'] }));
