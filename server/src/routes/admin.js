@@ -241,7 +241,7 @@ router.get('/orders/:id', async (req,res,next) => {
 });
 
 router.patch('/orders/:id/status', async (req,res,next) => {
-  const client = await pool.connect();
+  let client;
   let transactionOpen = false;
   try {
     const status = String(req.body?.status || '');
@@ -256,6 +256,7 @@ router.patch('/orders/:id/status', async (req,res,next) => {
     };
     if (!Object.hasOwn(transitions,status) || note.length > 500)
       return res.status(400).json({error:'Invalid order status or note.'});
+    client = await pool.connect();
     await client.query('BEGIN');
     transactionOpen = true;
     const current = await client.query('SELECT id,order_status,payment_status,is_test FROM orders WHERE id=$1 FOR UPDATE',[req.params.id]);
@@ -300,9 +301,9 @@ router.patch('/orders/:id/status', async (req,res,next) => {
     transactionOpen = false;
     res.json({order:updated.rows[0]});
   } catch(e) {
-    if (transactionOpen) await client.query('ROLLBACK');
+    if (transactionOpen && client) await client.query('ROLLBACK').catch(() => {});
     next(e);
-  } finally { client.release(); }
+  } finally { client?.release(); }
 });
 
 router.get('/tickets', async (req,res,next) => {
@@ -345,9 +346,10 @@ router.patch('/pharmacists/applications/:id', async (req,res,next) => {
       (decision === 'approved' && checkedAgainst.length < 5)) {
     return res.status(400).json({ error: 'Decision, review notes र approval गर्दा credential जाँचको आधार आवश्यक छ।' });
   }
-  const client = await pool.connect();
+  let client;
   let open = false;
   try {
+    client = await pool.connect();
     await client.query('BEGIN'); open = true;
     const app = await client.query(
       "SELECT * FROM pharmacist_applications WHERE id=$1 AND status='pending' FOR UPDATE",
@@ -386,9 +388,9 @@ router.patch('/pharmacists/applications/:id', async (req,res,next) => {
     await client.query('COMMIT'); open = false;
     res.json({ status: decision, message: decision === 'approved' ? 'Credential जाँचपछि Pharmacist account सक्रिय भयो।' : 'आवेदन अस्वीकृत गरियो।' });
   } catch (e) {
-    if (open) await client.query('ROLLBACK');
+    if (open && client) await client.query('ROLLBACK').catch(() => {});
     next(e);
-  } finally { client.release(); }
+  } finally { client?.release(); }
 });
 
 router.get('/medicine-reviews', async (req,res,next) => {
