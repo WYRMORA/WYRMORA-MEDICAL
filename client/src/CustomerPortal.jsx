@@ -170,7 +170,7 @@ export default function CustomerPortal({ onClose }) {
     </div> : <>
       <div className="customer-userbar"><span>Welcome, <strong>{user.name}</strong> · {user.email}</span><button onClick={logout}>Logout</button></div>
       <nav className="customer-tabs">
-        {['shop', ...(commerceEnabled ? ['cart'] : []), 'orders'].map(t => <button key={t} className={view === t ? 'active' : ''} onClick={() => setView(t)}>
+        {['shop','cart','orders'].map(t => <button key={t} className={view === t ? 'active' : ''} onClick={() => setView(t)}>
           {{shop:'Partner Products',cart:`Cart (${cart.length})`,orders:'My Orders'}[t]}
         </button>)}
       </nav>
@@ -191,10 +191,10 @@ export default function CustomerPortal({ onClose }) {
         </div>)}
         {!cart.length ? <p>Cart खाली छ। Partner Products बाट item थप्नुहोस्।</p> : <>
           <div className="customer-total"><strong>कुल जम्मा</strong><strong>{money(total)}</strong></div>
-          <form onSubmit={placeOrder}>
+          {commerceEnabled ? <form onSubmit={placeOrder}>
             <label>Delivery Address<textarea value={address} onChange={e => setAddress(e.target.value)} minLength="10" maxLength="500" rows="3" placeholder="पूरा delivery address लेख्नुहोस्..." required /></label>
-            <button className="primary" disabled={busy}>{busy ? 'Submitting...' : 'Place Test Order Request'}</button>
-          </form>
+            <button className="primary" disabled={busy}>{busy ? 'Submitting...' : 'Place Order Request'}</button>
+          </form> : <p className="customer-note">Checkout हाल बन्द छ। पुरानो cart बाट सामान हटाउन सक्नुहुन्छ; कानुनी तथा payment approval नआएसम्म order गर्न मिल्दैन।</p>}
         </>}
       </div>}
 

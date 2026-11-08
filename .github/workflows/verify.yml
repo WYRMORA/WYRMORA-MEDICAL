@@ -13,13 +13,35 @@ jobs:
         with:
           node-version: 20
       - run: npm install --prefix client
+      - run: npm audit --audit-level=high --prefix client
       - run: npm run build --prefix client
   server-tests:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: wyrmora_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d wyrmora_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/wyrmora_test
+      JWT_SECRET: test-only-secret-that-is-long-enough-123456789
+      ENABLE_MARKETPLACE_ORDERS: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm install --prefix server
+      - run: npm audit --audit-level=high --prefix server
+      - run: npm run migrate --prefix server
       - run: npm test --prefix server

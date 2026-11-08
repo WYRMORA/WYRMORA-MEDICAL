@@ -138,12 +138,9 @@ router.post('/', requireAuth, allowRoles('super_admin','editor'), adminWriteLimi
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
 
-    const priceVerified = Boolean(
-      d.price !== null &&
-      d.price !== undefined &&
-      d.priceNote &&
-      /pharmacy|फार्मेसी|supplier|mrp/i.test(d.priceNote)
-    );
+    // A free-text note is not proof of a current pharmacy price check.
+    // Keep prices unverified until a dedicated source-and-review workflow exists.
+    const priceVerified = false;
 
     const { rows } = await pool.query(
       `INSERT INTO medicines (
