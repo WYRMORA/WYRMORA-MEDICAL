@@ -37,3 +37,26 @@ test('payment verification and refund endpoints require an authenticated session
   assert.equal(verify.status,401);
   assert.equal(refund.status,401);
 });
+
+
+test('Super Admin credential and refund review endpoints require authentication', async () => {
+  const app=createApp();
+  const refunds=await request(app).get('/api/admin/refunds');
+  const sellerCredential=await request(app).patch('/api/admin/sellers/1/verification')
+    .set('Origin','http://localhost:5173').send({status:'verified'});
+  const pharmacistCredential=await request(app).patch('/api/admin/pharmacists/accounts/1/credential')
+    .set('Origin','http://localhost:5173').send({checkedAgainst:'Official register'});
+  assert.equal(refunds.status,401);
+  assert.equal(sellerCredential.status,401);
+  assert.equal(pharmacistCredential.status,401);
+});
+
+test('Private upload completion and attachment require authentication', async () => {
+  const app=createApp();
+  const complete=await request(app).post('/api/uploads/00000000-0000-4000-8000-000000000000/complete')
+    .set('Origin','http://localhost:5173').send({});
+  const attach=await request(app).post('/api/uploads/00000000-0000-4000-8000-000000000000/attach')
+    .set('Origin','http://localhost:5173').send({});
+  assert.equal(complete.status,401);
+  assert.equal(attach.status,401);
+});
