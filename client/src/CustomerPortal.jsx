@@ -68,7 +68,7 @@ export default function CustomerPortal({ onClose }) {
     Promise.all([request('/api/auth/me'), request('/api/products')])
       .then(([session, catalog]) => {
         if (!active) return;
-        setUser(session.user);
+        if (!new URLSearchParams(window.location.search).has('token')) setUser(session.user);
         setProducts(catalog.products || []);
         setCommerceEnabled(catalog.commerceEnabled === true);
       })
