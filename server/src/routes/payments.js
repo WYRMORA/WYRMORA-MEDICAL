@@ -16,7 +16,8 @@ async function khalti(path, payload) {
   const response = await fetch(`${khaltiBase()}${path}`, {
     method: 'POST',
     headers: { Authorization: `Key ${process.env.KHALTI_SECRET_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(15000)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
