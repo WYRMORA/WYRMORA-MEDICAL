@@ -8,145 +8,6 @@ import CustomerPortal from './CustomerPortal.jsx';
 
 const API = '/api/medicines';
 
-const starter = [
-  {
-    id: 'amoxicillin',
-    name: 'Amoxicillin',
-    nepali: 'एमोक्सिसिलिन',
-    category: 'एन्टिबायोटिक',
-    forms: 'क्याप्सुल, ट्याब्लेट, सस्पेन्सन',
-    use: 'केही ब्याक्टेरियाबाट हुने संक्रमणको उपचारमा चिकित्सकले प्रयोग गराउने एन्टिबायोटिक हो।',
-    symptoms: 'संक्रमणको प्रकारअनुसार चिकित्सकले प्रयोगको निर्णय गर्छन्।',
-    caution: 'Penicillin allergy भए स्वास्थ्यकर्मीलाई जानकारी दिनुहोस्। चिकित्सकको सल्लाहबिना प्रयोग नगर्नुहोस्।',
-    side: 'पखाला, वाकवाकी, छालामा डाबर वा एलर्जी हुन सक्छ।',
-    prescription: 'प्रिस्क्रिप्सन आवश्यक',
-    price: null,
-    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
-    source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false,
-    verificationStatus: 'pending'
-  },
-  {
-    id: 'azithromycin',
-    name: 'Azithromycin',
-    nepali: 'एजिथ्रोमाइसिन',
-    category: 'एन्टिबायोटिक',
-    forms: 'ट्याब्लेट, सस्पेन्सन',
-    use: 'संवेदनशील ब्याक्टेरियाबाट हुने केही संक्रमणमा चिकित्सकले प्रयोग गराउने एन्टिबायोटिक हो।',
-    symptoms: 'संक्रमणको प्रकारअनुसार चिकित्सकले प्रयोगको निर्णय गर्छन्।',
-    caution: 'चिकित्सकको सल्लाहबिना प्रयोग नगर्नुहोस्।',
-    side: 'पखाला, वाकवाकी, पेट दुख्ने वा एलर्जी हुन सक्छ।',
-    prescription: 'प्रिस्क्रिप्सन आवश्यक',
-    price: null,
-    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
-    source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false,
-    verificationStatus: 'pending'
-  },
-  {
-    id: 'cetirizine',
-    name: 'Cetirizine',
-    nepali: 'सेटिरिजिन',
-    category: 'एलर्जी',
-    forms: 'ट्याब्लेट, सिरप',
-    use: 'एलर्जीका लक्षण कम गर्न प्रयोग हुने antihistamine औषधि हो।',
-    symptoms: 'छिँक आउने, नाक वा आँखा चिलाउने र छालामा चिलाउने डाबर।',
-    caution: 'निद्रा लाग्न सक्छ। गाडी चलाउँदा सावधानी अपनाउनुहोस्।',
-    side: 'निद्रा लाग्ने, मुख सुक्ने वा थकान हुन सक्छ।',
-    prescription: 'उत्पादनअनुसार पुष्टि गर्नुहोस्।',
-    price: null,
-    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
-    source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false,
-    verificationStatus: 'pending'
-  },
-  {
-    id: 'ibuprofen',
-    name: 'Ibuprofen',
-    nepali: 'आइबुप्रोफेन',
-    category: 'दुखाइ तथा सुन्निने समस्या',
-    forms: 'ट्याब्लेट, सस्पेन्सन',
-    use: 'दुखाइ, ज्वरो र सूजन कम गर्न प्रयोग हुने NSAID औषधि हो।',
-    symptoms: 'मांसपेशी वा जोर्नी दुखाइ र महिनावारी दुखाइ।',
-    caution: 'पेटको अल्सर, रक्तस्राव, मिर्गौला वा मुटुको समस्या भए स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।',
-    side: 'पेट दुख्ने, अपच, वाकवाकी वा गम्भीर अवस्थामा रक्तस्राव हुन सक्छ।',
-    prescription: 'उत्पादन र शक्तिअनुसार फरक पर्न सक्छ।',
-    price: null,
-    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
-    source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false,
-    verificationStatus: 'pending'
-  },
-  {
-    id: 'metformin',
-    name: 'Metformin',
-    nepali: 'मेटफर्मिन',
-    category: 'मधुमेह',
-    forms: 'ट्याब्लेट',
-    use: 'टाइप २ मधुमेहमा रगतमा चिनीको मात्रा नियन्त्रण गर्न प्रयोग गरिने औषधि हो।',
-    symptoms: 'टाइप २ मधुमेहमा चिकित्सकले आवश्यक ठानेमा प्रयोग गरिन्छ।',
-    caution: 'मिर्गौलाको समस्या भए चिकित्सकलाई जानकारी दिनुहोस्। आफैं औषधि सुरु वा बन्द नगर्नुहोस्।',
-    side: 'पखाला, वाकवाकी वा पेट असहज हुन सक्छ।',
-    prescription: 'चिकित्सकको सल्लाह आवश्यक।',
-    price: null,
-    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
-    source: 'सामान्य औषधि जानकारी; चिकित्सकको सल्लाह आवश्यक।',
-    priceVerified: false,
-    verificationStatus: 'pending'
-  },
-  {
-    id: 'omeprazole',
-    name: 'Omeprazole',
-    nepali: 'ओमेप्राजोल',
-    category: 'पेटको अम्ल',
-    forms: 'क्याप्सुल, ट्याब्लेट',
-    use: 'पेटमा बन्ने अम्ल घटाउने proton pump inhibitor औषधि हो।',
-    symptoms: 'अम्लपित्त, GERD तथा केही प्रकारका अल्सरमा चिकित्सकले सिफारिस गर्न सक्छन्।',
-    caution: 'लामो समय आफैं प्रयोग नगर्नुहोस्। रगत बान्ता वा कालो दिसा भए तुरुन्त जाँच गराउनुहोस्।',
-    side: 'टाउको दुख्ने, पेट दुख्ने, वाकवाकी वा पखाला हुन सक्छ।',
-    prescription: 'स्वास्थ्यकर्मीसँग पुष्टि गर्नुहोस्।',
-    price: null,
-    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
-    source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false,
-    verificationStatus: 'pending'
-  },
-  {
-    id: 'ors',
-    name: 'Oral Rehydration Salts (ORS)',
-    nepali: 'जीवनजल (ओआरएस)',
-    category: 'पानी तथा लवणको कमी',
-    forms: 'पाउडर स्याचेट',
-    use: 'पखाला वा बान्ताका कारण शरीरबाट गएको पानी र लवण पूर्ति गर्न मद्दत गर्छ।',
-    symptoms: 'पखाला वा बान्तापछि हुने निर्जलीकरण रोकथाम तथा उपचारमा सहयोग।',
-    caution: 'स्याचेटमा लेखिएको पानीको ठ्याक्कै मात्रामा घोल्नुहोस्। गम्भीर निर्जलीकरण भए तुरुन्त स्वास्थ्य संस्था जानुहोस्।',
-    side: 'सही अनुपातमा तयार गर्दा सामान्यतया सुरक्षित हुन्छ।',
-    prescription: 'सामान्यतया prescription नचाहिने; प्याकेटको निर्देशन पालना गर्नुहोस्।',
-    price: null,
-    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
-    source: 'सामान्य स्वास्थ्य जानकारी; प्याकेटको निर्देशन प्राथमिक।',
-    priceVerified: false,
-    verificationStatus: 'pending'
-  },
-  {
-    id: 'paracetamol',
-    name: 'Paracetamol',
-    nepali: 'प्यारासिटामोल',
-    category: 'दुखाइ तथा ज्वरो',
-    forms: 'ट्याब्लेट, सिरप, ड्रप',
-    use: 'ज्वरो घटाउन र हल्का देखि मध्यम दुखाइ कम गर्न प्रयोग गरिन्छ।',
-    symptoms: 'टाउको दुखाइ, दाँत दुखाइ, शरीर दुखाइ र ज्वरो।',
-    caution: 'कलेजोसम्बन्धी समस्या वा अन्य paracetamol भएको औषधि प्रयोग गरिरहनुभएको छ भने स्वास्थ्यकर्मीसँग सल्लाह लिनुहोस्।',
-    side: 'एलर्जी वा दुर्लभ अवस्थामा कलेजोमा गम्भीर असर हुन सक्छ।',
-    prescription: 'उत्पादन र formulation अनुसार फरक पर्न सक्छ।',
-    price: null,
-    priceNote: 'फार्मेसीबाट मूल्य पुष्टि हुन बाँकी',
-    source: 'सामान्य औषधि जानकारी; उत्पादनअनुसार पुष्टि गर्नुपर्ने।',
-    priceVerified: false,
-    verificationStatus: 'pending'
-  }
-];
-
 const emptyForm = {
   name: '',
   nepali: '',
@@ -203,7 +64,7 @@ function verificationBadge(status) {
 }
 
 export default function App() {
-  const [items, setItems] = useState(starter);
+  const [items, setItems] = useState([]);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('सबै');
   const [selected, setSelected] = useState(null);
@@ -218,6 +79,8 @@ export default function App() {
   const [savingMedicine, setSavingMedicine] = useState(false);
   const [savingVerification, setSavingVerification] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [form, setForm] = useState({ ...emptyForm });
   const [verificationForm, setVerificationForm] =
@@ -234,9 +97,11 @@ export default function App() {
 
         if (active && Array.isArray(data.items)) {
           setItems(data.items);
+          setLoadError('');
         }
       } catch (error) {
         console.error('Medicine API:', error);
+        if (active) setLoadError('औषधि सूची अहिले लोड हुन सकेन। कृपया केहीबेरपछि पुनः प्रयास गर्नुहोस्।');
       } finally {
         if (active) setLoading(false);
       }
@@ -247,7 +112,7 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadKey]);
 
   const categories = useMemo(
     () => [
@@ -864,6 +729,19 @@ export default function App() {
 
             {loading && <p>औषधिको विवरण लोड हुँदैछ...</p>}
 
+            {!loading && loadError && (
+              <div className="empty" role="alert">
+                <h3>औषधि सूची उपलब्ध छैन</h3>
+                <p>{loadError}</p>
+                <button className="primary" type="button" onClick={() => {
+                  setLoading(true);
+                  setReloadKey(value => value + 1);
+                }}>
+                  पुनः प्रयास गर्नुहोस्
+                </button>
+              </div>
+            )}
+
             <section className="medicine-grid">
               {filtered.map(medicine => (
                 <article
@@ -918,7 +796,7 @@ export default function App() {
               ))}
             </section>
 
-            {!loading && filtered.length === 0 && (
+            {!loading && !loadError && filtered.length === 0 && (
               <div className="empty">
                 <h3>औषधि भेटिएन</h3>
                 <p>अर्को नाम वा Category प्रयोग गरेर खोज्नुहोस्।</p>
