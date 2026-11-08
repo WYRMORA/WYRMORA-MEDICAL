@@ -330,3 +330,34 @@ test('logout clears the session cookie without requiring a valid session', async
   assert.ok(cookie, 'logout should send a cookie-clearing header');
   assert.match(cookie, /Expires=Thu, 01 Jan 1970|Max-Age=0/i);
 });
+
+
+test('checkout detects unavailable cart rows before creating an order', async () => {
+  const originalQuery = pool.query;
+  const originalConnect = pool.connect;
+  const originalFlag = config.enableMarketplaceOrders;
+  const calls = [];
+  config.enableMarketplaceOrders = true;
+  pool.query = async () => ({ rows: [{ id: '42', name: 'Test', email: 'test@example.com', role: 'customer', is_active: true }], rowCount: 1 });
+  pool.connect = async () => ({
+    query: async sql => {
+      calls.push(sql);
+      if (sql.includes('COUNT(*)::int AS count FROM cart_items')) return { rows: [{ count: 2 }], rowCount: 1 };
+      if (sql.includes('FROM cart_items ci JOIN products')) return { rows: [{ product_id: 7, quantity: 1, name: 'Available', price: '100.00', stock: 5, seller_id: 9, is_test: false }], rowCount: 1 };
+      return { rows: [], rowCount: 0 };
+    },
+    release: () => {}
+  });
+  try {
+    const token = jwt.sign({ email: 'test@example.com' }, config.jwtSecret, { subject: '42', issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' });
+    const response = await request(createApp()).post('/api/orders').set('Cookie', config.cookieName + '=' + token).set('Origin', config.clientOrigins[0]).send({ shippingAddress: '123 Main Street, Kathmandu' });
+    assert.equal(response.status, 409);
+    assert.match(response.body.error, /unavailable products/i);
+    assert.ok(calls.includes('ROLLBACK'));
+    assert.equal(calls.includes('COMMIT'), false);
+  } finally {
+    pool.query = originalQuery;
+    pool.connect = originalConnect;
+    config.enableMarketplaceOrders = originalFlag;
+  }
+});
