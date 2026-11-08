@@ -168,4 +168,5 @@ test('demo seed script refuses to run in production mode', () => {
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Demo seed is disabled in production/);
+  assert.doesNotMatch(result.stderr, /ECONNREFUSED|connect ECONN/);
 });
