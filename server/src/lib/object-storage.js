@@ -37,6 +37,11 @@ export async function inspectUploadedObject(key) {
     throw error;
   }
   const result = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+  if (Number(result.ContentLength || 0) > 10 * 1024 * 1024) {
+    const error = new Error('Uploaded file exceeds the maximum allowed size.');
+    error.status = 413;
+    throw error;
+  }
   const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
   const bytes = await object.Body.transformToByteArray();
   const detected = await fileTypeFromBuffer(bytes);
