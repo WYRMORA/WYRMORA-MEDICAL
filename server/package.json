@@ -8,7 +8,9 @@
     "start": "node src/server.js",
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",
-    "test": "NODE_ENV=test node --test"
+    "test": "NODE_ENV=test node --test",
+    "backup": "node scripts/backup.js",
+    "backup:verify": "node scripts/verify-backup.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -20,7 +22,10 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.1",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "@aws-sdk/client-s3": "^3.850.0",
+    "@aws-sdk/s3-request-presigner": "^3.850.0",
+    "file-type": "^19.6.0"
   },
   "devDependencies": {
     "supertest": "^7.0.0"

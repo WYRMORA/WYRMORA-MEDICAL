@@ -160,7 +160,7 @@ router.patch('/products/:id/approve', async (req,res,next) => {
 router.get('/sellers/pending', async (req,res,next) => {
   try {
     const result = await pool.query(
-      `SELECT s.id,s.user_id,s.business_name,s.description,s.verification_status,s.created_at,
+      `SELECT s.id,s.user_id,s.business_name,s.description,s.verification_status,s.credential_asset_id,s.created_at,
               u.name AS owner_name,u.email AS owner_email
        FROM sellers s JOIN users u ON u.id=s.user_id
        WHERE s.verification_status='pending' ORDER BY s.created_at ASC`
@@ -475,7 +475,7 @@ router.get('/pharmacists/accounts', async (req,res,next) => {
   try {
     const result = await pool.query(
       `SELECT u.id,u.name,u.email,u.is_active,p.qualification,p.registration_number,
-              p.issuing_authority,p.is_credential_active,p.credential_verified_at,
+              p.issuing_authority,p.is_credential_active,p.credential_asset_id,p.credential_verified_at,
               reviewer.name AS verified_by_name
        FROM pharmacist_profiles p JOIN users u ON u.id=p.user_id
        LEFT JOIN users reviewer ON reviewer.id=p.credential_verified_by

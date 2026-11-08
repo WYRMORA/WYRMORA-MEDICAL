@@ -43,6 +43,18 @@ Only enter a medicine price after confirming the exact brand, ingredient, streng
 
 Email verification and password recovery APIs are available. Configure `PUBLIC_APP_URL`, `RESEND_API_KEY` and `EMAIL_FROM` as server secrets before enabling email delivery. See [account email security setup](./docs/ACCOUNT-SECURITY-EMAIL.md).
 
+## Private uploads
+
+S3-compatible private storage APIs support presigned uploads for product images and seller/pharmacist credentials. Objects remain private; the API verifies file signatures, MIME type and size before confirming uploads. Configure the S3-compatible environment variables and follow [private storage setup](./docs/PRIVATE-FILE-STORAGE.md).
+
+## Payments
+
+A Khalti KPG-2 server-side initiate and lookup flow, customer payment history, idempotent payment events and a manual refund-review workflow are implemented. Marketplace orders remain disabled by default. Configure merchant sandbox credentials and follow [payment integration](./docs/PAYMENT-INTEGRATION.md) before any sandbox test. Refund execution is still performed in the merchant dashboard and reconciled by an authorized administrator.
+
+## Database backup
+
+Use `npm run backup --prefix server` to create a custom-format PostgreSQL backup and `npm run backup:verify --prefix server -- <file>` to restore it into a temporary database and verify the restored schema. See [backup and restore](./docs/BACKUP-RESTORE.md).
+
 ## Pharmacist workflow
 
 Applicants can submit their qualification and registration details. A Super Admin must independently verify credentials against the relevant official issuing authority before approving an account. Credential documents are not uploaded through this app; arrange secure document review separately. Approved pharmacists can submit clinical reviews with notes and references. A Super Admin makes the final publication decision.
