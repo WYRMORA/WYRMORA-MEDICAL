@@ -80,7 +80,8 @@ export default function CustomerPortal({ onClose }) {
     Promise.all([request('/api/auth/me'), request('/api/products')])
       .then(([session, catalog]) => {
         if (!active) return;
-        if (!new URLSearchParams(window.location.search).has('token')) setUser(session.user);
+        const accountActionPath=['/verify-email','/reset-password'].includes(window.location.pathname);
+        if (!accountActionPath) setUser(session.user);
         setProducts(catalog.products || []);
         setCommerceEnabled(catalog.commerceEnabled === true);
       })
