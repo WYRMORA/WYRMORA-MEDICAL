@@ -92,18 +92,8 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
       .set('Origin',config.clientOrigins[0])
       .send({businessName:'Integration Pharmacy Store',description:'Integration test seller profile'});
     assert.equal(sellerProfile.status,201);
-    await pool.query("UPDATE sellers SET verification_status='verified' WHERE user_id=$1",[userId]);
-    const listing = await request(app)
-      .post('/api/seller/products')
-      .set('Cookie',cookie)
-      .set('Origin',config.clientOrigins[0])
-      .send({name:'Integration Test Product',description:'A sufficiently detailed product description for integration testing.',categoryId,price:125,stock:8});
-    assert.equal(listing.status,201);
-    assert.equal(listing.body.product.status,'pending');
-    sellerProductId = listing.body.product.id;
-    const sellerProducts = await request(app).get('/api/seller/products').set('Cookie',cookie);
-    assert.equal(sellerProducts.status,200);
-    assert.equal(sellerProducts.body.products.length,1);
+    const sellerRow=await pool.query('SELECT id FROM sellers WHERE user_id=$1',[userId]);
+    const sellerId=sellerRow.rows[0].id;
 
 
     const adminEmail = `integration-admin-${randomUUID()}@example.test`;
@@ -117,6 +107,43 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
       { subject: String(adminId), issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
     );
     const adminCookie = `${config.cookieName}=${adminToken}`;
+    const sellerApprovalWithoutCredential=await request(app)
+      .patch(`/api/admin/sellers/${sellerId}/verification`)
+      .set('Cookie',adminCookie)
+      .set('Origin',config.clientOrigins[0])
+      .send({status:'verified',checkedAgainst:'Official register',notes:'Checked'});
+    assert.equal(sellerApprovalWithoutCredential.status,409);
+    const sellerCredentialId=randomUUID();
+    await pool.query(
+      `INSERT INTO private_assets(id,owner_user_id,purpose,object_key,original_name,content_type,size_bytes,status,uploaded_at)
+       VALUES($1,$2,'seller_credential',$3,'license.pdf','application/pdf',1024,'uploaded',NOW())`,
+      [sellerCredentialId,userId,`integration/private/seller/${sellerCredentialId}.pdf`]
+    );
+    await pool.query('UPDATE sellers SET credential_asset_id=$1 WHERE user_id=$2',[sellerCredentialId,userId]);
+    const sellerApproval=await request(app)
+      .patch(`/api/admin/sellers/${sellerId}/verification`)
+      .set('Cookie',adminCookie)
+      .set('Origin',config.clientOrigins[0])
+      .send({status:'verified',checkedAgainst:'Official issuing authority register',notes:'Business identity and license checked.'});
+    assert.equal(sellerApproval.status,200);
+    assert.equal(sellerApproval.body.seller.verification_status,'verified');
+    const listing = await request(app)
+      .post('/api/seller/products')
+      .set('Cookie',cookie)
+      .set('Origin',config.clientOrigins[0])
+      .send({name:'Integration Test Product',description:'A sufficiently detailed product description for integration testing.',categoryId,price:125,stock:8});
+    assert.equal(listing.status,201);
+    assert.equal(listing.body.product.status,'pending');
+    sellerProductId = listing.body.product.id;
+    const sellerProducts = await request(app).get('/api/seller/products').set('Cookie',cookie);
+    assert.equal(sellerProducts.status,200);
+    assert.equal(sellerProducts.body.products.length,1);
+    const sellerAudit=await pool.query(
+      `SELECT metadata FROM audit_logs WHERE actor_id=$1 AND action='seller_verification_updated' AND entity_id=$2 ORDER BY created_at DESC LIMIT 1`,
+      [adminId,String(sellerId)]
+    );
+    assert.equal(sellerAudit.rowCount,1);
+    assert.equal(sellerAudit.rows[0].metadata.assetId,sellerCredentialId);
     const approvedListing = await request(app)
       .patch(`/api/admin/products/${sellerProductId}/approve`)
       .set('Cookie',adminCookie)
@@ -154,6 +181,29 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
         issuingAuthority:'Nepal Pharmacy Council'
       });
     assert.equal(reapplication.status,201);
+
+    const approvedApplication = await request(app)
+      .patch(`/api/admin/pharmacists/applications/${reapplication.body.application.id}`)
+      .set('Cookie', adminCookie)
+      .set('Origin', config.clientOrigins[0])
+      .send({ decision:'approved', notes:'Provisional account created pending private credential review.' });
+    assert.equal(approvedApplication.status,200);
+    const provisional = await pool.query(
+      `SELECT p.is_credential_active,p.credential_verified_at,p.credential_verified_by,u.id
+       FROM pharmacist_profiles p JOIN users u ON u.id=p.user_id WHERE u.email=$1`,
+      [pharmacistEmail]
+    );
+    assert.equal(provisional.rowCount,1);
+    assert.equal(provisional.rows[0].is_credential_active,false);
+    assert.equal(provisional.rows[0].credential_verified_at,null);
+    assert.equal(provisional.rows[0].credential_verified_by,null);
+    const provisionalToken=jwt.sign({email:pharmacistEmail},config.jwtSecret,{
+      subject:String(provisional.rows[0].id),issuer:'wyrmora-api',audience:'wyrmora-client',expiresIn:'8h'
+    });
+    const blockedClinicalAccess=await request(app).get('/api/pharmacist/medicines')
+      .set('Cookie',`${config.cookieName}=${provisionalToken}`);
+    assert.equal(blockedClinicalAccess.status,403);
+    await pool.query('DELETE FROM users WHERE id=$1',[provisional.rows[0].id]);
 
     // A later deployment re-runs the migration chain. A rejected application
     // and its active reapplication must not make migration 008 fail.
