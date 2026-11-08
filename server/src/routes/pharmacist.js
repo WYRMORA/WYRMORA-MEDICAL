@@ -10,7 +10,7 @@ const router = Router();
 const applicationLimit = rateLimit({ windowMs: 60 * 60 * 1000, limit: 3, standardHeaders: 'draft-7', legacyHeaders: false });
 const reviewLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false });
 
-const applicationSchema = z.object({
+export const applicationSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: emailSchema,
   password: passwordSchema,
@@ -68,7 +68,7 @@ router.get('/medicines', async (req,res,next) => {
   } catch (e) { next(e); }
 });
 
-const reviewSchema = z.object({
+export const reviewSchema = z.object({
   recommendation: z.enum(['approved','changes_requested']),
   clinicalNotes: z.string().trim().min(30).max(4000),
   sources: z.string().trim().min(10).max(2000)
