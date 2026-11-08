@@ -63,8 +63,14 @@ export default function CustomerPortal({ onClose }) {
   }
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get('token');
-    if (token) { setResetToken(token); setMode(window.location.pathname === '/verify-email' ? 'verify-confirm' : 'reset-confirm'); }
+    const currentUrl = new URL(window.location.href);
+    const token = currentUrl.searchParams.get('token');
+    if (token) {
+      setResetToken(token);
+      setMode(window.location.pathname === '/verify-email' ? 'verify-confirm' : 'reset-confirm');
+      currentUrl.searchParams.delete('token');
+      window.history.replaceState({}, '', currentUrl.pathname + currentUrl.search + currentUrl.hash);
+    }
     const pidx = new URLSearchParams(window.location.search).get('pidx');
     if (pidx) setPaymentPidx(pidx);
   }, []);
