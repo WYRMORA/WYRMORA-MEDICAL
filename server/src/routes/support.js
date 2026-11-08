@@ -1,10 +1,16 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { pool } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 const router=Router();
 router.use(requireAuth);
+export function createSupportLimit() {
+  return rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: 'draft-7', legacyHeaders: false,
+    message: { error: 'Support ticket limit reached. Please try again later.' } });
+}
+const supportCreateLimit = createSupportLimit();
 
-router.post('/',async(req,res,next)=>{
+router.post('/',supportCreateLimit,async(req,res,next)=>{
   try{
     const subject=String(req.body?.subject||'').trim();
     const message=String(req.body?.message||'').trim();
