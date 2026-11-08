@@ -321,6 +321,26 @@ test('super-admin bootstrap rejects a missing or incorrect bootstrap token befor
   }
 });
 
+
+test('password reset session-version changes revoke older JWT sessions', async () => {
+  const originalQuery = pool.query;
+  pool.query = async () => ({
+    rows: [{ id: '42', name: 'Test User', email: 'test@example.com', role: 'customer', is_active: true, session_version: 1 }],
+    rowCount: 1
+  });
+  try {
+    const staleToken = jwt.sign(
+      { email: 'test@example.com', sessionVersion: 0 },
+      config.jwtSecret,
+      { subject: '42', issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
+    );
+    const response = await request(createApp()).get('/api/auth/me')
+      .set('Cookie', `${config.cookieName}=${staleToken}`);
+    assert.equal(response.status, 401);
+    assert.equal(response.body.error, 'Account is unavailable.');
+  } finally { pool.query = originalQuery; }
+});
+
 test('logout clears the session cookie without requiring a valid session', async () => {
   const response = await request(createApp()).post('/api/auth/logout')
     .set('Origin', config.clientOrigins[0]);
