@@ -23,9 +23,10 @@ async function khalti(path, payload) {
 }
 
 router.post('/khalti/initiate', allowRoles('customer'), async (req,res,next) => {
-  const client = await pool.connect();
+  let client;
   let paymentId;
   try {
+    client = await pool.connect();
     if (!configured()) return res.status(503).json({ error: 'Khalti payment is not configured.' });
     await client.query('BEGIN');
     const order = await client.query(
@@ -60,9 +61,12 @@ router.post('/khalti/initiate', allowRoles('customer'), async (req,res,next) => 
     );
     return res.status(201).json({ payment: { id:paymentId,paymentUrl:result.payment_url,pidx:result.pidx,amountPaisa,provider:'khalti' } });
   } catch (e) {
-    if (paymentId) await pool.query("UPDATE payment_transactions SET status='failed',updated_at=NOW() WHERE id=$1 AND status='initiating'",[paymentId]).catch(()=>{});
+    if (paymentId) {
+      await pool.query("UPDATE payment_transactions SET status='failed',updated_at=NOW() WHERE id=$1 AND status='initiating'",[paymentId]).catch(()=>{});
+      await pool.query("UPDATE orders SET payment_status='failed' WHERE id=(SELECT order_id FROM payment_transactions WHERE id=$1) AND payment_status='pending'",[paymentId]).catch(()=>{});
+    }
     return next(e);
-  } finally { client.release(); }
+  } finally { client?.release(); }
 });
 
 router.post('/khalti/verify', allowRoles('customer'), async (req,res,next) => {
