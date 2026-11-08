@@ -9,6 +9,7 @@ import { config } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { emailSchema } from '../src/lib/validation.js';
 import { applicationSchema, createApplicationLimit, reviewSchema } from '../src/routes/pharmacist.js';
+import { createSupportLimit } from '../src/routes/support.js';
 
 test('health endpoint reports API status', async () => {
   const app = createApp();
@@ -212,6 +213,16 @@ test('transaction routes forward database connection failures to the JSON error 
     pool.query = originalQuery;
     pool.connect = originalConnect;
   }
+});
+
+
+test('support ticket rate limit allows five submissions and blocks the sixth per IP', async () => {
+  const app = express();
+  app.set('trust proxy', 1);
+  app.post('/support', createSupportLimit(), (_req, res) => res.sendStatus(204));
+  const responses = [];
+  for (let i = 0; i < 6; i++) responses.push(await request(app).post('/support'));
+  assert.deepEqual(responses.map(response => response.status), [204,204,204,204,204,429]);
 });
 
 test('marketplace cart and checkout remain disabled by default even for authenticated customers', async () => {
