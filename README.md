@@ -59,7 +59,7 @@ Before accepting orders, payments, pharmacy listings, sponsored placement or med
 - Publish privacy policy, terms, consent and retention notices; define breach response.
 - Complete security review, encrypted backups and a tested restore procedure.
 
-Payment gateway credentials and live payment processing are not included. Keep commercial medicine sales and fulfilment disabled until the required approvals and workflows are in place. Do not store patient health histories until privacy, consent, retention and security controls have been reviewed.
+Payment gateway credentials and live payment processing are not included. Cart and checkout APIs are disabled by default (`ENABLE_MARKETPLACE_ORDERS=false`). Keep this flag false until legal/pharmacy approvals, verified suppliers and a server-verified merchant payment integration are in place. Do not store patient health histories until privacy, consent, retention and security controls have been reviewed.
 
 ## Production deployment
 
