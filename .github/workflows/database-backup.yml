@@ -16,6 +16,20 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: wyrmora_restore_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d wyrmora_restore_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Check backup configuration
         id: config
@@ -58,6 +72,7 @@ jobs:
           pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --file="$backup_file"
           test -s "$backup_file"
           sha256sum "$backup_file"
+          PGPASSWORD=postgres pg_restore --host=127.0.0.1 --port=5432 --username=postgres --dbname=wyrmora_restore_test --no-owner --no-acl --exit-on-error "$backup_file"
           backup_name="wyrmora-db-$(date -u +%Y%m%dT%H%M%SZ).dump"
           aws s3 cp "$backup_file" "s3://$BACKUP_S3_BUCKET/database-backups/$backup_name" --endpoint-url "$BACKUP_S3_ENDPOINT" --only-show-errors
           echo "Backup uploaded: database-backups/$backup_name"
