@@ -75,12 +75,12 @@ const reviewSchema = z.object({
 });
 
 router.post('/medicines/:id/reviews', reviewLimit, async (req,res,next) => {
+  const parsed = reviewSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Review note कम्तीमा ३० अक्षर र source कम्तीमा १० अक्षर हुनुपर्छ।' });
+  const d = parsed.data;
   const client = await pool.connect();
   let open = false;
   try {
-    const parsed = reviewSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: 'Review note कम्तीमा ३० अक्षर र source कम्तीमा १० अक्षर हुनुपर्छ।' });
-    const d = parsed.data;
     await client.query('BEGIN'); open = true;
     const medicine = await client.query('SELECT id,verification_status FROM medicines WHERE id=$1 FOR UPDATE',[req.params.id]);
     if (!medicine.rowCount) {
