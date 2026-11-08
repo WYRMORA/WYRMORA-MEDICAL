@@ -53,7 +53,7 @@ A Khalti KPG-2 server-side initiate and lookup flow, customer payment history, i
 
 ## Database backup
 
-Use `npm run backup --prefix server` to create a custom-format PostgreSQL backup and `npm run backup:verify --prefix server -- <file>` to restore it into a temporary database and verify the restored schema. See [backup and restore](./docs/BACKUP-RESTORE.md).
+Use `npm run backup --prefix server` to create a custom-format PostgreSQL backup and `npm run backup:verify --prefix server -- <file>` to restore it into a temporary database and verify the restored schema. See [backup and restore](./docs/BACKUP-RESTORE.md) and [scheduled off-site backups](./docs/AUTOMATED-BACKUPS.md).
 
 ## Pharmacist workflow
 
