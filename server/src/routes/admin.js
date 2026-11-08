@@ -326,4 +326,163 @@ router.patch('/tickets/:id', async (req,res,next) => {
     res.json({ticket:result.rows[0]});
   } catch(e){next(e);}
 });
+
+router.get('/pharmacists/applications', async (req,res,next) => {
+  try {
+    const result = await pool.query(
+      `SELECT id,full_name,email,phone,qualification,registration_number,issuing_authority,status,created_at
+       FROM pharmacist_applications WHERE status='pending' ORDER BY created_at ASC LIMIT 200`
+    );
+    res.json({ applications: result.rows });
+  } catch (e) { next(e); }
+});
+
+router.patch('/pharmacists/applications/:id', async (req,res,next) => {
+  const decision = String(req.body?.decision || '');
+  const notes = String(req.body?.notes || '').trim();
+  const checkedAgainst = String(req.body?.checkedAgainst || '').trim();
+  if (!['approved','rejected'].includes(decision) || notes.length > 2000 ||
+      (decision === 'approved' && checkedAgainst.length < 5)) {
+    return res.status(400).json({ error: 'Decision, review notes र approval गर्दा credential जाँचको आधार आवश्यक छ।' });
+  }
+  const client = await pool.connect();
+  let open = false;
+  try {
+    await client.query('BEGIN'); open = true;
+    const app = await client.query(
+      "SELECT * FROM pharmacist_applications WHERE id=$1 AND status='pending' FOR UPDATE",
+      [req.params.id]
+    );
+    if (!app.rowCount) {
+      await client.query('ROLLBACK'); open = false;
+      return res.status(404).json({ error: 'Pending pharmacist application भेटिएन।' });
+    }
+    const a = app.rows[0];
+    if (decision === 'approved') {
+      const existing = await client.query('SELECT id FROM users WHERE LOWER(email)=LOWER($1)',[a.email]);
+      if (existing.rowCount) {
+        await client.query('ROLLBACK'); open = false;
+        return res.status(409).json({ error: 'यो email बाट पहिल्यै user account छ। Duplicate account स्वतः बनाइएन।' });
+      }
+      const created = await client.query(
+        "INSERT INTO users(name,email,password_hash,role,is_active) VALUES($1,$2,$3,'pharmacist',TRUE) RETURNING id,name,email,role",
+        [a.full_name,a.email,a.password_hash]
+      );
+      await client.query(
+        `INSERT INTO pharmacist_profiles(user_id,qualification,registration_number,issuing_authority,credential_verified_by,credential_verified_at)
+         VALUES($1,$2,$3,$4,$5,NOW())`,
+        [created.rows[0].id,a.qualification,a.registration_number,a.issuing_authority,req.user.id]
+      );
+    }
+    await client.query(
+      'UPDATE pharmacist_applications SET status=$1,review_notes=$2,reviewed_by=$3,reviewed_at=NOW(),updated_at=NOW() WHERE id=$4',
+      [decision,notes || null,req.user.id,req.params.id]
+    );
+    await client.query(
+      `INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata)
+       VALUES($1,$2,'pharmacist_application',$3,$4)`,
+      [req.user.id,`pharmacist_application_${decision}`,req.params.id,JSON.stringify({registrationNumber:a.registration_number,checkedAgainst:decision==='approved'?checkedAgainst:null})]
+    );
+    await client.query('COMMIT'); open = false;
+    res.json({ status: decision, message: decision === 'approved' ? 'Credential जाँचपछि Pharmacist account सक्रिय भयो।' : 'आवेदन अस्वीकृत गरियो।' });
+  } catch (e) {
+    if (open) await client.query('ROLLBACK');
+    next(e);
+  } finally { client.release(); }
+});
+
+router.get('/medicine-reviews', async (req,res,next) => {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT ON (m.id) m.id AS medicine_id,m.name,m.nepali_name,m.verification_status,
+              r.id AS review_id,r.recommendation,r.clinical_notes,r.sources,r.reviewed_at,
+              u.name AS pharmacist_name,p.registration_number
+       FROM medicines m
+       JOIN medicine_reviews r ON r.medicine_id=m.id AND r.reviewed_at >= m.updated_at
+       JOIN users u ON u.id=r.pharmacist_id
+       JOIN pharmacist_profiles p ON p.user_id=u.id AND p.is_credential_active=TRUE
+       WHERE m.verification_status <> 'verified' AND u.is_active=TRUE
+       ORDER BY m.id,r.reviewed_at DESC`
+    );
+    res.json({ reviews: result.rows });
+  } catch (e) { next(e); }
+});
+
+router.patch('/medicines/:id/publish-verification', async (req,res,next) => {
+  const client = await pool.connect();
+  let open = false;
+  try {
+    await client.query('BEGIN'); open = true;
+    const review = await client.query(
+      `SELECT r.id,r.recommendation,r.clinical_notes,r.pharmacist_id,p.registration_number
+       FROM medicine_reviews r
+       JOIN medicines m ON m.id=r.medicine_id AND r.reviewed_at >= m.updated_at
+       JOIN pharmacist_profiles p ON p.user_id=r.pharmacist_id AND p.is_credential_active=TRUE
+       JOIN users u ON u.id=r.pharmacist_id AND u.is_active=TRUE
+       WHERE r.medicine_id=$1 ORDER BY r.reviewed_at DESC LIMIT 1`,
+      [req.params.id]
+    );
+    if (!review.rowCount || review.rows[0].recommendation !== 'approved') {
+      await client.query('ROLLBACK'); open = false;
+      return res.status(409).json({ error: 'अन्तिम Pharmacist review ले approval नदिएसम्म प्रकाशित Verified गर्न मिल्दैन।' });
+    }
+    const updated = await client.query(
+      `UPDATE medicines SET verification_status='verified',verified_by=$1,
+       pharmacist_registration=$2,verified_at=NOW(),verification_notes=$3,updated_at=NOW()
+       WHERE id=$4 AND verification_status <> 'verified' RETURNING id,name,verification_status,verified_at`,
+      [String(review.rows[0].pharmacist_id),review.rows[0].registration_number,review.rows[0].clinical_notes,req.params.id]
+    );
+    if (!updated.rowCount) {
+      await client.query('ROLLBACK'); open = false;
+      return res.status(404).json({ error: 'औषधि भेटिएन वा पहिले नै Verified छ।' });
+    }
+    await client.query(
+      `INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata)
+       VALUES($1,'medicine_verification_published','medicine',$2,$3)`,
+      [req.user.id,req.params.id,JSON.stringify({reviewId:review.rows[0].id,pharmacistId:review.rows[0].pharmacist_id})]
+    );
+    await client.query('COMMIT'); open = false;
+    res.json({ medicine: updated.rows[0] });
+  } catch (e) {
+    if (open) await client.query('ROLLBACK');
+    next(e);
+  } finally { client.release(); }
+});
+
+
+router.get('/pharmacists/accounts', async (req,res,next) => {
+  try {
+    const result = await pool.query(
+      `SELECT u.id,u.name,u.email,u.is_active,p.qualification,p.registration_number,
+              p.issuing_authority,p.is_credential_active,p.credential_verified_at,
+              reviewer.name AS verified_by_name
+       FROM pharmacist_profiles p JOIN users u ON u.id=p.user_id
+       LEFT JOIN users reviewer ON reviewer.id=p.credential_verified_by
+       ORDER BY p.credential_verified_at DESC`
+    );
+    res.json({ pharmacists: result.rows });
+  } catch (e) { next(e); }
+});
+
+router.patch('/pharmacists/accounts/:id/status', async (req,res,next) => {
+  try {
+    const active = req.body?.active;
+    if (typeof active !== 'boolean') return res.status(400).json({ error: 'active true वा false हुनुपर्छ।' });
+    const result = await pool.query(
+      `UPDATE users u SET is_active=$1,updated_at=NOW()
+       FROM pharmacist_profiles p
+       WHERE u.id=$2 AND p.user_id=u.id
+       RETURNING u.id,u.name,u.email,u.is_active`,
+      [active,req.params.id]
+    );
+    if (!result.rowCount) return res.status(404).json({ error: 'Pharmacist account भेटिएन।' });
+    await pool.query(
+      'UPDATE pharmacist_profiles SET is_credential_active=$1 WHERE user_id=$2',
+      [active,req.params.id]
+    );
+    await audit(req.user.id,active?'pharmacist_credential_reactivated':'pharmacist_credential_suspended','pharmacist',req.params.id,{active});
+    res.json({ pharmacist: result.rows[0] });
+  } catch (e) { next(e); }
+});
+
 export default router;

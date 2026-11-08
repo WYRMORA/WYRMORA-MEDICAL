@@ -4,6 +4,7 @@ import './App.css';
 import AdminConsole from './AdminConsole.jsx';
 import MedicineReportForm from './MedicineReportForm.jsx';
 import CustomerPortal from './CustomerPortal.jsx';
+import PharmacistPortal from './PharmacistPortal.jsx';
 
 
 const API = '/api/medicines';
@@ -69,6 +70,7 @@ export default function App() {
 
   const [showAdmin, setShowAdmin] = useState(false);
   const [showCustomer, setShowCustomer] = useState(false);
+  const [showPharmacist, setShowPharmacist] = useState(false);
   const [notice, setNotice] = useState('');
   const [noticeType, setNoticeType] = useState('info');
 
@@ -362,6 +364,10 @@ export default function App() {
             {showCustomer ? 'Customer बन्द गर्नुहोस्' : 'Customer Login / Orders'}
           </button>
 
+          <button onClick={() => { setShowPharmacist(value => !value); setShowAdmin(false); setShowCustomer(false); }}>
+            {showPharmacist ? 'Pharmacist बन्द गर्नुहोस्' : 'Pharmacist'}
+          </button>
+
           <button onClick={openAdmin}>
             {showAdmin ? 'Admin बन्द गर्नुहोस्' : 'Admin'}
           </button>
@@ -403,6 +409,7 @@ export default function App() {
         </section>
 
         {showCustomer && <CustomerPortal onClose={() => setShowCustomer(false)} />}
+        {showPharmacist && <PharmacistPortal onClose={() => setShowPharmacist(false)} />}
 
         {showAdmin && (
           <AdminConsole onClose={() => setShowAdmin(false)}>
