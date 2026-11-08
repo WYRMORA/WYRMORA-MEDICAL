@@ -509,6 +509,32 @@ router.get('/pharmacists/accounts', async (req,res,next) => {
   } catch (e) { next(e); }
 });
 
+router.patch('/pharmacists/accounts/:id/credential', async (req,res,next) => {
+  try {
+    const checkedAgainst=String(req.body?.checkedAgainst||'').trim();
+    const notes=String(req.body?.notes||'').trim();
+    if(checkedAgainst.length<5||checkedAgainst.length>300||notes.length>1000)
+      return res.status(400).json({error:'Official issuing authority/register and review note are required.'});
+    const credential=await pool.query(
+      `SELECT a.id FROM pharmacist_profiles p
+       JOIN private_assets a ON a.id=p.credential_asset_id AND a.owner_user_id=p.user_id
+         AND a.status='uploaded' AND a.purpose='pharmacist_credential'
+       JOIN users u ON u.id=p.user_id AND u.is_active=true
+       WHERE p.user_id=$1`,
+      [req.params.id]
+    );
+    if(!credential.rowCount)return res.status(409).json({error:'Uploaded pharmacist credential document is required before verification.'});
+    const result=await pool.query(
+      `UPDATE pharmacist_profiles SET is_credential_active=true,credential_verified_by=$1,
+       credential_verified_at=NOW() WHERE user_id=$2 RETURNING user_id,is_credential_active,credential_verified_at`,
+      [req.user.id,req.params.id]
+    );
+    if(!result.rowCount)return res.status(404).json({error:'Pharmacist profile not found.'});
+    await audit(req.user.id,'pharmacist_private_credential_verified','pharmacist',req.params.id,{checkedAgainst,notes,assetId:credential.rows[0].id});
+    res.json({pharmacist:result.rows[0],message:'Credential review recorded and pharmacist access activated.'});
+  }catch(e){next(e);}
+});
+
 router.patch('/pharmacists/accounts/:id/status', async (req,res,next) => {
   try {
     const active = req.body?.active;
