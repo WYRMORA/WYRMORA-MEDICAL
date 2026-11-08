@@ -24,7 +24,8 @@ export async function createUploadUrl({ key, contentType, sizeBytes }) {
   }
   const command = new PutObjectCommand({
     Bucket: bucket, Key: key, ContentType: contentType,
-    ContentLength: sizeBytes, ServerSideEncryption: 'AES256'
+    ContentLength: sizeBytes,
+    ...(process.env.S3_SERVER_SIDE_ENCRYPTION ? { ServerSideEncryption: process.env.S3_SERVER_SIDE_ENCRYPTION } : {})
   });
   return getSignedUrl(client, command, { expiresIn: 300 });
 }
