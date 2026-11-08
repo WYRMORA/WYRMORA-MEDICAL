@@ -60,7 +60,7 @@ export default function CustomerPortal({ onClose }) {
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('token');
-    if (token) { setResetToken(token); setMode('reset-confirm'); }
+    if (token) { setResetToken(token); setMode(window.location.pathname === '/verify-email' ? 'verify-confirm' : 'reset-confirm'); }
   }, []);
 
   useEffect(() => {
@@ -109,13 +109,14 @@ export default function CustomerPortal({ onClose }) {
         ? { email }
         : action === 'verify'
           ? { email: user?.email || email }
-          : { token: resetToken, password: newPassword };
+          : action === 'verify-confirm' ? { token: resetToken } : { token: resetToken, password: newPassword };
       const endpoint = action === 'reset' ? '/api/account/password-reset/request'
         : action === 'verify' ? '/api/account/email-verification/request'
-          : '/api/account/password-reset/confirm';
+          : action === 'verify-confirm' ? '/api/account/email-verification/confirm'
+            : '/api/account/password-reset/confirm';
       const data = await request(endpoint, { method: 'POST', body: JSON.stringify(payload) });
       setMessage(data.message || 'Request सफल भयो।');
-      if (action === 'confirm') {
+      if (action === 'confirm' || action === 'verify-confirm') {
         setPassword(''); setNewPassword(''); setResetToken(''); setMode('login');
         window.history.replaceState({}, '', window.location.pathname);
       }
@@ -180,9 +181,9 @@ export default function CustomerPortal({ onClose }) {
     {message && <p className="notice success">{message}</p>}
 
     {!user ? <div className="customer-auth">
-      <h3>{mode === 'login' ? 'Customer Login' : mode === 'register' ? 'नयाँ Customer Account बनाउनुहोस्' : mode === 'reset-request' ? 'Password Reset' : 'नयाँ Password राख्नुहोस्'}</h3>
+      <h3>{mode === 'login' ? 'Customer Login' : mode === 'register' ? 'नयाँ Customer Account बनाउनुहोस्' : mode === 'reset-request' ? 'Password Reset' : mode === 'verify-confirm' ? 'Email Verification' : 'नयाँ Password राख्नुहोस्'}</h3>
       <p>Order request गर्न पहिले customer account मा प्रवेश गर्नुहोस्।</p>
-      {mode === 'reset-confirm' ? <form onSubmit={event => { event.preventDefault(); requestAccountAction('confirm'); }}>
+      {mode === 'verify-confirm' ? <div><p>Email ठेगाना पुष्टि गर्न तलको बटन थिच्नुहोस्।</p><button className="primary" disabled={busy} onClick={() => requestAccountAction('verify-confirm')}>{busy ? 'Please wait...' : 'Verify Email'}</button></div> : mode === 'reset-confirm' ? <form onSubmit={event => { event.preventDefault(); requestAccountAction('confirm'); }}>
         <label>नयाँ Password<input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength="10" maxLength="72" required autoComplete="new-password" /></label>
         <small>Password मा lowercase, uppercase र number हुनुपर्छ।</small>
         <button className="primary" disabled={busy}>{busy ? 'Please wait...' : 'Password Update'}</button>
