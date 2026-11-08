@@ -39,7 +39,11 @@ Sign in to Admin using a Super Admin or Editor account. Medicine create/update e
 
 Only enter a medicine price after confirming the exact brand, ingredient, strength, dosage form, pack size, seller and current MRP/retail basis. Record the source and confirmation date. A price-source confirmation is not a clinical review.
 
-## Account security\n\nEmail verification and password recovery APIs are available. Configure `PUBLIC_APP_URL`, `RESEND_API_KEY` and `EMAIL_FROM` as server secrets before enabling email delivery. See [account email security setup](./docs/ACCOUNT-SECURITY-EMAIL.md). The frontend must include token confirmation screens before exposing these flows to customers.\n\n## Pharmacist workflow
+## Account security
+
+Email verification and password recovery APIs are available. Configure `PUBLIC_APP_URL`, `RESEND_API_KEY` and `EMAIL_FROM` as server secrets before enabling email delivery. See [account email security setup](./docs/ACCOUNT-SECURITY-EMAIL.md).
+
+## Pharmacist workflow
 
 Applicants can submit their qualification and registration details. A Super Admin must independently verify credentials against the relevant official issuing authority before approving an account. Credential documents are not uploaded through this app; arrange secure document review separately. Approved pharmacists can submit clinical reviews with notes and references. A Super Admin makes the final publication decision.
 
