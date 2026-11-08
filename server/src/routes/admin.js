@@ -170,27 +170,43 @@ router.get('/sellers/pending', async (req,res,next) => {
 });
 
 router.patch('/sellers/:id/verification', async (req,res,next) => {
-  try {
-    const status=String(req.body?.status||'');
-    if(!['pending','verified','rejected'].includes(status)) return res.status(400).json({error:'Invalid seller verification status.'});
+  const status=String(req.body?.status||'');
+  const checkedAgainst=String(req.body?.checkedAgainst||'').trim();
+  const notes=String(req.body?.notes||'').trim();
+  if(!['pending','verified','rejected'].includes(status)) return res.status(400).json({error:'Invalid seller verification status.'});
+  if(status==='verified'&&(checkedAgainst.length<5||checkedAgainst.length>300||notes.length>1000))
+    return res.status(400).json({error:'Official issuing authority/register and review note are required before approval.'});
+  let client;
+  try{
+    client=await pool.connect();
+    await client.query('BEGIN');
+    const seller=await client.query('SELECT id,user_id FROM sellers WHERE id=$1 FOR UPDATE',[req.params.id]);
+    if(!seller.rowCount){await client.query('ROLLBACK');return res.status(404).json({error:'Seller profile not found.'});}
+    let assetId=null;
     if(status==='verified'){
-      const credential=await pool.query(
+      const credential=await client.query(
         `SELECT a.id FROM sellers s
          JOIN private_assets a ON a.id=s.credential_asset_id AND a.owner_user_id=s.user_id
            AND a.status='uploaded' AND a.purpose='seller_credential'
          WHERE s.id=$1`,
         [req.params.id]
       );
-      if(!credential.rowCount)return res.status(409).json({error:'Verified private business/pharmacy credential upload is required before seller approval.'});
+      if(!credential.rowCount){await client.query('ROLLBACK');return res.status(409).json({error:'Verified private business/pharmacy credential upload is required before seller approval.'});}
+      assetId=credential.rows[0].id;
     }
-    const result=await pool.query(
+    const result=await client.query(
       'UPDATE sellers SET verification_status=$1 WHERE id=$2 RETURNING id,user_id,business_name,verification_status',
       [status,req.params.id]
     );
-    if(!result.rowCount)return res.status(404).json({error:'Seller profile not found.'});
-    await audit(req.user.id,'seller_verification_updated','seller',req.params.id,{status});
+    await client.query(
+      `INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata)
+       VALUES($1,'seller_verification_updated','seller',$2,$3)`,
+      [req.user.id,String(req.params.id),JSON.stringify({status,checkedAgainst:status==='verified'?checkedAgainst:null,notes:status==='verified'?notes:null,assetId})]
+    );
+    await client.query('COMMIT');
     res.json({seller:result.rows[0]});
-  } catch(e){next(e);}
+  }catch(e){await client?.query('ROLLBACK').catch(()=>{});next(e);}
+  finally{client?.release();}
 });
 
 router.post('/test-products', async (req,res,next) => {
@@ -399,10 +415,13 @@ router.patch('/pharmacists/applications/:id', async (req,res,next) => {
         "INSERT INTO users(name,email,password_hash,role,is_active) VALUES($1,$2,$3,'pharmacist',TRUE) RETURNING id,name,email,role",
         [a.full_name,a.email,a.password_hash]
       );
+      // Application approval creates a provisional account only. No uploaded credential
+      // has been inspected yet, so clinical access must remain disabled.
       await client.query(
-        `INSERT INTO pharmacist_profiles(user_id,qualification,registration_number,issuing_authority,credential_verified_by,credential_verified_at)
-         VALUES($1,$2,$3,$4,$5,NOW())`,
-        [created.rows[0].id,a.qualification,a.registration_number,a.issuing_authority,req.user.id]
+        `INSERT INTO pharmacist_profiles(user_id,qualification,registration_number,issuing_authority,
+          credential_verified_by,credential_verified_at,is_credential_active)
+         VALUES($1,$2,$3,$4,NULL,NULL,FALSE)`,
+        [created.rows[0].id,a.qualification,a.registration_number,a.issuing_authority]
       );
     }
     await client.query(
@@ -415,7 +434,7 @@ router.patch('/pharmacists/applications/:id', async (req,res,next) => {
       [req.user.id,`pharmacist_application_${decision}`,req.params.id,JSON.stringify({registrationNumber:a.registration_number,checkedAgainst:decision==='approved'?checkedAgainst:null})]
     );
     await client.query('COMMIT'); open = false;
-    res.json({ status: decision, message: decision === 'approved' ? 'Credential जाँचपछि Pharmacist account सक्रिय भयो।' : 'आवेदन अस्वीकृत गरियो।' });
+    res.json({ status: decision, message: decision === 'approved' ? 'Provisional Pharmacist account बन्यो। Credential upload र Super Admin verification पूरा नभएसम्म clinical access बन्द रहन्छ।' : 'आवेदन अस्वीकृत गरियो।' });
   } catch (e) {
     if (open && client) await client.query('ROLLBACK').catch(() => {});
     next(e);
@@ -511,28 +530,41 @@ router.get('/pharmacists/accounts', async (req,res,next) => {
 });
 
 router.patch('/pharmacists/accounts/:id/credential', async (req,res,next) => {
+  const checkedAgainst=String(req.body?.checkedAgainst||'').trim();
+  const notes=String(req.body?.notes||'').trim();
+  if(checkedAgainst.length<5||checkedAgainst.length>300||notes.length>1000)
+    return res.status(400).json({error:'Official issuing authority/register and review note are required.'});
+  let client;
   try {
-    const checkedAgainst=String(req.body?.checkedAgainst||'').trim();
-    const notes=String(req.body?.notes||'').trim();
-    if(checkedAgainst.length<5||checkedAgainst.length>300||notes.length>1000)
-      return res.status(400).json({error:'Official issuing authority/register and review note are required.'});
-    const credential=await pool.query(
+    client=await pool.connect();
+    await client.query('BEGIN');
+    const profile=await client.query(
+      'SELECT user_id FROM pharmacist_profiles WHERE user_id=$1 FOR UPDATE',
+      [req.params.id]
+    );
+    if(!profile.rowCount){await client.query('ROLLBACK');return res.status(404).json({error:'Pharmacist profile not found.'});}
+    const credential=await client.query(
       `SELECT a.id FROM pharmacist_profiles p
        JOIN private_assets a ON a.id=p.credential_asset_id AND a.owner_user_id=p.user_id
          AND a.status='uploaded' AND a.purpose='pharmacist_credential'
        WHERE p.user_id=$1`,
       [req.params.id]
     );
-    if(!credential.rowCount)return res.status(409).json({error:'Uploaded pharmacist credential document is required before verification.'});
-    const result=await pool.query(
+    if(!credential.rowCount){await client.query('ROLLBACK');return res.status(409).json({error:'Uploaded pharmacist credential document is required before verification.'});}
+    const result=await client.query(
       `UPDATE pharmacist_profiles SET is_credential_active=true,credential_verified_by=$1,
        credential_verified_at=NOW() WHERE user_id=$2 RETURNING user_id,is_credential_active,credential_verified_at`,
       [req.user.id,req.params.id]
     );
-    if(!result.rowCount)return res.status(404).json({error:'Pharmacist profile not found.'});
-    await audit(req.user.id,'pharmacist_private_credential_verified','pharmacist',req.params.id,{checkedAgainst,notes,assetId:credential.rows[0].id});
+    await client.query(
+      `INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata)
+       VALUES($1,'pharmacist_private_credential_verified','pharmacist',$2,$3)`,
+      [req.user.id,String(req.params.id),JSON.stringify({checkedAgainst,notes,assetId:credential.rows[0].id})]
+    );
+    await client.query('COMMIT');
     res.json({pharmacist:result.rows[0],message:'Credential review recorded and pharmacist access activated.'});
-  }catch(e){next(e);}
+  }catch(e){await client?.query('ROLLBACK').catch(()=>{});next(e);}
+  finally{client?.release();}
 });
 
 router.patch('/pharmacists/accounts/:id/status', async (req,res,next) => {
