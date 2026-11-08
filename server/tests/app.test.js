@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { emailSchema } from '../src/lib/validation.js';
+import { applicationSchema, reviewSchema } from '../src/routes/pharmacist.js';
 
 test('health endpoint reports API status', async () => {
   const app = createApp();
@@ -53,4 +54,84 @@ test('medicine write endpoint requires an authenticated admin session', async ()
 test('shared email validation accepts normal addresses and rejects malformed input', () => {
   assert.equal(emailSchema.safeParse('admin@example.com').success,true);
   assert.equal(emailSchema.safeParse('admin example.com').success,false);
+});
+
+test('pharmacist application schema normalizes email and rejects weak passwords', () => {
+  const valid = applicationSchema.safeParse({
+    name:' Test Pharmacist ',
+    email:' PHARMACIST@EXAMPLE.COM ',
+    password:'StrongPass123',
+    qualification:'B.Pharm',
+    registrationNumber:'NPC-12345'
+  });
+  assert.equal(valid.success,true);
+  assert.equal(valid.data.email,'pharmacist@example.com');
+  assert.equal(valid.data.name,'Test Pharmacist');
+  assert.equal(valid.data.issuingAuthority,'Nepal Pharmacy Council');
+
+  const weakPassword = applicationSchema.safeParse({
+    name:'Test Pharmacist',
+    email:'pharmacist@example.com',
+    password:'weakpassword',
+    qualification:'B.Pharm',
+    registrationNumber:'NPC-12345'
+  });
+  assert.equal(weakPassword.success,false);
+});
+
+test('pharmacist application schema rejects missing credentials and malformed email', () => {
+  const missingRegistration = applicationSchema.safeParse({
+    name:'Test Pharmacist',
+    email:'pharmacist@example.com',
+    password:'StrongPass123',
+    qualification:'B.Pharm',
+    registrationNumber:' '
+  });
+  assert.equal(missingRegistration.success,false);
+
+  const malformedEmail = applicationSchema.safeParse({
+    name:'Test Pharmacist',
+    email:'not-an-email',
+    password:'StrongPass123',
+    qualification:'B.Pharm',
+    registrationNumber:'NPC-12345'
+  });
+  assert.equal(malformedEmail.success,false);
+});
+
+test('clinical review schema enforces recommendation, note and source requirements', () => {
+  const valid = reviewSchema.safeParse({
+    recommendation:'approved',
+    clinicalNotes:'Reviewed dosage, contraindications, interactions and patient safety information.',
+    sources:'Official medicine reference'
+  });
+  assert.equal(valid.success,true);
+
+  const invalid = reviewSchema.safeParse({
+    recommendation:'verified',
+    clinicalNotes:'Too short',
+    sources:'No'
+  });
+  assert.equal(invalid.success,false);
+});
+
+test('pharmacist medicine workspace requires an authenticated pharmacist session', async () => {
+  const app = createApp();
+  const response = await request(app).get('/api/pharmacist/medicines');
+  assert.equal(response.status,401);
+});
+
+test('pharmacist application endpoint rejects invalid details before database access', async () => {
+  const app = createApp();
+  const response = await request(app).post('/api/pharmacist/applications')
+    .set('Origin','http://localhost:5173')
+    .send({
+      name:'X',
+      email:'bad-email',
+      password:'weak',
+      qualification:'',
+      registrationNumber:''
+    });
+  assert.equal(response.status,400);
+  assert.match(response.body.error,/आवेदनका/);
 });
