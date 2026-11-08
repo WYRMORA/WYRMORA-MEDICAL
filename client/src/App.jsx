@@ -53,9 +53,9 @@ async function readResponse(response) {
 
 function verificationBadge(status) {
   const badges = {
-    verified: ['✓ Verified', 'verified'],
-    under_review: ['◷ Under Review', 'unverified'],
-    pending: ['○ Pending', 'unverified']
+    verified: ['✓ Pharmacist reviewed', 'verified'],
+    under_review: ['◷ समीक्षामा', 'unverified'],
+    pending: ['○ समीक्षा बाँकी', 'unverified']
   };
 
   const [label, className] = badges[status] || badges.pending;
