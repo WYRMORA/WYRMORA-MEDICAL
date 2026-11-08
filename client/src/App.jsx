@@ -5,6 +5,7 @@ import AdminConsole from './AdminConsole.jsx';
 import MedicineReportForm from './MedicineReportForm.jsx';
 import CustomerPortal from './CustomerPortal.jsx';
 import PharmacistPortal from './PharmacistPortal.jsx';
+import SellerPortal from './SellerPortal.jsx';
 
 
 const API = '/api/medicines';
@@ -71,6 +72,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showCustomer, setShowCustomer] = useState(false);
   const [showPharmacist, setShowPharmacist] = useState(false);
+  const [showSeller, setShowSeller] = useState(false);
   const [notice, setNotice] = useState('');
   const [noticeType, setNoticeType] = useState('info');
 
@@ -360,11 +362,15 @@ export default function App() {
             हाम्रो बारेमा
           </button>
 
-          <button onClick={() => { setShowCustomer(value => !value); setShowAdmin(false); }}>
+          <button onClick={() => { setShowCustomer(value => !value); setShowAdmin(false); setShowPharmacist(false); setShowSeller(false); }}>
             {showCustomer ? 'Customer बन्द गर्नुहोस्' : 'Customer Login / Orders'}
           </button>
 
-          <button onClick={() => { setShowPharmacist(value => !value); setShowAdmin(false); setShowCustomer(false); }}>
+          <button onClick={() => { setShowSeller(value => !value); setShowAdmin(false); setShowCustomer(false); setShowPharmacist(false); }}>
+            {showSeller ? 'Seller बन्द गर्नुहोस्' : 'Become a Seller'}
+          </button>
+
+          <button onClick={() => { setShowPharmacist(value => !value); setShowAdmin(false); setShowCustomer(false); setShowSeller(false); }}>
             {showPharmacist ? 'Pharmacist बन्द गर्नुहोस्' : 'Pharmacist'}
           </button>
 
@@ -410,6 +416,7 @@ export default function App() {
 
         {showCustomer && <CustomerPortal onClose={() => setShowCustomer(false)} />}
         {showPharmacist && <PharmacistPortal onClose={() => setShowPharmacist(false)} />}
+        {showSeller && <SellerPortal onClose={() => setShowSeller(false)} />}
 
         {showAdmin && (
           <AdminConsole onClose={() => setShowAdmin(false)}>
