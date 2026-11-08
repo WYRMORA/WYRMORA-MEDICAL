@@ -381,7 +381,7 @@ router.patch('/pharmacists/applications/:id', async (req,res,next) => {
       );
     }
     await client.query(
-      'UPDATE pharmacist_applications SET status=$1,review_notes=$2,reviewed_by=$3,reviewed_at=NOW(),updated_at=NOW() WHERE id=$4',
+      'UPDATE pharmacist_applications SET status=$1,password_hash=NULL,review_notes=$2,reviewed_by=$3,reviewed_at=NOW(),updated_at=NOW() WHERE id=$4',
       [decision,notes || null,req.user.id,req.params.id]
     );
     await client.query(
