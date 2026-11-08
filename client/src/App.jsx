@@ -569,7 +569,6 @@ export default function App() {
                   value={verificationForm.status}
                   onChange={event => {
                     updateVerificationForm('status', event.target.value);
-                    updateVerificationForm('reviewConfirmed', false);
                   }}
                 >
                   <option value="pending">Pending</option>
