@@ -411,9 +411,10 @@ router.get('/medicine-reviews', async (req,res,next) => {
 });
 
 router.patch('/medicines/:id/publish-verification', async (req,res,next) => {
-  const client = await pool.connect();
+  let client;
   let open = false;
   try {
+    client = await pool.connect();
     await client.query('BEGIN'); open = true;
     const review = await client.query(
       `SELECT r.id,r.recommendation,r.clinical_notes,r.pharmacist_id,p.registration_number
@@ -446,9 +447,9 @@ router.patch('/medicines/:id/publish-verification', async (req,res,next) => {
     await client.query('COMMIT'); open = false;
     res.json({ medicine: updated.rows[0] });
   } catch (e) {
-    if (open) await client.query('ROLLBACK');
+    if (open && client) await client.query('ROLLBACK').catch(() => {});
     next(e);
-  } finally { client.release(); }
+  } finally { client?.release(); }
 });
 
 
