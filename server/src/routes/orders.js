@@ -16,8 +16,10 @@ router.post('/', (req,res,next) => config.enableMarketplaceOrders ? next() : res
     client = await pool.connect();
     await client.query('BEGIN');
     transactionOpen = true;
-    const cartCount = await client.query(
-      'SELECT COUNT(*)::int AS count FROM cart_items WHERE user_id=$1',
+    // Lock the customer's cart rows before checking eligibility so concurrent
+    // cart edits cannot change the set of items halfway through checkout.
+    const lockedCart = await client.query(
+      'SELECT product_id FROM cart_items WHERE user_id=$1 ORDER BY product_id FOR UPDATE',
       [req.user.id]
     );
     const cart = await client.query(
@@ -30,7 +32,7 @@ router.post('/', (req,res,next) => config.enableMarketplaceOrders ? next() : res
        ORDER BY p.id FOR UPDATE OF p`,
       [req.user.id, config.enableTestOrderWorkflow]
     );
-    if (cart.rowCount && cart.rowCount !== cartCount.rows[0].count) {
+    if (cart.rowCount !== lockedCart.rowCount) {
       await client.query('ROLLBACK'); transactionOpen = false;
       return res.status(409).json({ error: 'Your cart contains unavailable products. Review your cart and remove unavailable items before checkout.' });
     }
