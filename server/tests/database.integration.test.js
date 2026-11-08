@@ -66,6 +66,8 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
 
     const cart = await request(app).get('/api/cart').set('Cookie', cookie);
     assert.equal(cart.status, 200);
+    const removeCartItem = await request(app).delete('/api/cart/items/999999').set('Cookie', cookie);
+    assert.equal(removeCartItem.status, 204);
     const checkout = await request(app)
       .post('/api/orders')
       .set('Cookie', cookie)
