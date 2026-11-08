@@ -40,7 +40,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client awscli
 
-      - name: Create and upload encrypted-at-rest backup
+      - name: Create and upload database backup
         if: steps.config.outputs.ready == 'true'
         env:
           DATABASE_URL: ${{ secrets.WYRMORA_DATABASE_URL }}
