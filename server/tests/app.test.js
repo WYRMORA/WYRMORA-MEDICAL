@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import express from 'express';
+import { spawnSync } from 'node:child_process';
 import { createApp } from '../src/app.js';
 import { emailSchema } from '../src/lib/validation.js';
 import { applicationSchema, createApplicationLimit, reviewSchema } from '../src/routes/pharmacist.js';
@@ -153,4 +154,19 @@ test('pharmacist application rate limit allows three requests and blocks the fou
   assert.equal(second.status, 204);
   assert.equal(third.status, 204);
   assert.equal(fourth.status, 429);
+});
+
+test('demo seed script refuses to run in production mode', () => {
+  const result = spawnSync(process.execPath, ['scripts/seed.js'], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      DATABASE_URL: 'postgres://test:test@127.0.0.1:5432/test',
+      JWT_SECRET: 'test-only-secret-that-is-long-enough-123456789'
+    }
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Demo seed is disabled in production/);
+  assert.doesNotMatch(result.stderr, /ECONNREFUSED|connect ECONN/);
 });

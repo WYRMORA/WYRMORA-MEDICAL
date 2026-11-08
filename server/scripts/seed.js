@@ -2,26 +2,27 @@ import bcrypt from 'bcryptjs';
 import { pool } from '../src/db.js';
 
 try {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Demo seed is disabled in production. Do not create demo marketplace accounts or listings on a live service.');
+  }
+
   const categories = [
     ['Electronics','electronics'],['Fashion','fashion'],['Home','home'],['Books','books'],['Sports','sports']
   ];
   for (const [name,slug] of categories) {
     await pool.query('INSERT INTO categories(name,slug) VALUES($1,$2) ON CONFLICT(slug) DO NOTHING',[name,slug]);
   }
-  const hash = await bcrypt.hash('ChangeMe123!',12);
-  await pool.query(
-    `INSERT INTO users(name,email,password_hash,role)
-     VALUES('WYRMORA Admin','admin@wyrmora.test',$1,'admin')
-     ON CONFLICT(email) DO NOTHING`, [hash]
-  );
+
   const sellerHash = await bcrypt.hash('SellerDemo123!',12);
   const seller = await pool.query(
     `INSERT INTO users(name,email,password_hash,role)
      VALUES('Demo Seller','seller@wyrmora.test',$1,'seller')
-     ON CONFLICT(email) DO UPDATE SET email=EXCLUDED.email RETURNING id`,[sellerHash]
+     ON CONFLICT(email) DO UPDATE SET email=EXCLUDED.email RETURNING id`,
+    [sellerHash]
   );
   await pool.query(`INSERT INTO sellers(user_id,business_name,description,verification_status)
-    VALUES($1,'WYRMORA Select','Seed seller profile','verified') ON CONFLICT(user_id) DO NOTHING`,[seller.rows[0].id]);
+    VALUES($1,'WYRMORA Select','Local development seed seller','verified') ON CONFLICT(user_id) DO NOTHING`,[seller.rows[0].id]);
+
   const cats = await pool.query('SELECT id,slug FROM categories');
   const map = Object.fromEntries(cats.rows.map(c=>[c.slug,c.id]));
   const items = [
@@ -40,8 +41,8 @@ try {
       [seller.rows[0].id,map[cat],name,description,price,stock]
     );
   }
-  console.log('Seed complete. Admin: admin@wyrmora.test / ChangeMe123!');
-  console.log('Demo seller: seller@wyrmora.test / SellerDemo123!');
+  console.log('Development seed complete. Demo seller: seller@wyrmora.test / SellerDemo123!');
+  console.log('This demo seller and its sample listings are for local development only.');
 } catch (err) {
   console.error('Seed failed:',err.message);
   process.exitCode=1;
