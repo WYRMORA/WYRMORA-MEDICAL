@@ -22,7 +22,7 @@ Until all five secrets exist, the scheduled workflow deliberately skips the back
 4. Use a dedicated least-privilege key and rotate it.
 5. Keep the backup bucket separate from application uploads where possible.
 
-The workflow creates a PostgreSQL custom-format dump, checks that it is non-empty, prints its SHA-256 checksum, uploads it to `database-backups/`, and deletes its temporary local copy. It does not print the database URL or access keys.
+The workflow creates a PostgreSQL custom-format dump, checks that it is non-empty, prints its SHA-256 checksum, restores it into an isolated PostgreSQL 16 service container with `pg_restore --exit-on-error`, uploads it to `database-backups/` only after restore succeeds, and deletes its temporary local copy. It does not print the database URL or access keys.
 
 ## Verification
 
