@@ -1,0 +1,985 @@
+source_name_raw,original_entry_numbers
+Paracetamol,1
+Ibuprofen,2
+Aspirin,3
+Diclofenac,4
+Naproxen,5
+Ketorolac,6
+Mefenamic Acid,7
+Celecoxib,8
+Etoricoxib,9
+Meloxicam,10
+Indomethacin,11
+Piroxicam,12
+Aceclofenac,13
+Nimesulide,14
+Tramadol,15
+Morphine,16
+Codeine,17
+Fentanyl,18
+Buprenorphine,19
+Oxycodone,20
+Lidocaine,21
+Bupivacaine,22
+Ropivacaine,23
+Prilocaine,24
+Benzocaine,25
+Diclofenac Gel,26;995
+Methyl Salicylate,27
+Capsaicin,28
+Menthol,29
+Colchicine,30
+Allopurinol,31
+Febuxostat,32
+Probenecid,33
+Methotrexate,34;803
+Hydroxychloroquine,35
+Sulfasalazine,36;562
+Leflunomide,37
+Azathioprine,38
+Cyclosporine,39
+Tacrolimus,40
+Prednisolone,41
+Dexamethasone,42
+Hydrocortisone,43
+Betamethasone,44
+Methylprednisolone,45
+Deflazacort,46
+Triamcinolone,47
+Budesonide,48;573
+Fluticasone,49
+Beclometasone,50
+Amoxicillin,51
+Ampicillin,52
+Penicillin V,53
+Benzylpenicillin,54
+Cloxacillin,55
+Flucloxacillin,56
+Dicloxacillin,57
+Piperacillin,58
+Ticarcillin,59
+Amoxicillin-Clavulanate,60
+Ampicillin-Sulbactam,61
+Piperacillin-Tazobactam,62
+Cefalexin,63
+Cefadroxil,64
+Cefazolin,65
+Cefuroxime,66
+Cefaclor,67
+Cefixime,68
+Cefpodoxime,69
+Cefdinir,70
+Ceftriaxone,71
+Cefotaxime,72
+Ceftazidime,73
+Cefepime,74
+Cefoperazone,75
+Cefoperazone-Sulbactam,76
+Ceftaroline,77
+Ceftobiprole,78
+Meropenem,79
+Imipenem-Cilastatin,80
+Ertapenem,81
+Doripenem,82
+Aztreonam,83
+Gentamicin,84
+Amikacin,85
+Tobramycin,86
+Streptomycin,87
+Neomycin,88
+Kanamycin,89
+Ciprofloxacin,90
+Levofloxacin,91
+Moxifloxacin,92
+Ofloxacin,93
+Norfloxacin,94
+Nalidixic Acid,95
+Azithromycin,96
+Clarithromycin,97
+Erythromycin,98
+Roxithromycin,99
+Doxycycline,100
+Tetracycline,101
+Minocycline,102
+Tigecycline,103
+Chloramphenicol,104
+Clindamycin,105
+Lincomycin,106
+Metronidazole,107
+Tinidazole,108
+Ornidazole,109
+Secnidazole,110
+Vancomycin,111
+Teicoplanin,112
+Linezolid,113
+Tedizolid,114
+Daptomycin,115
+Colistin,116
+Polymyxin B,117
+Nitrofurantoin,118
+Fosfomycin,119
+Trimethoprim,120
+Sulfamethoxazole,121
+Co-trimoxazole,122
+Sulfadiazine,123
+Sulfisoxazole,124
+Rifampicin,125
+Rifabutin,126
+Rifapentine,127
+Isoniazid,128
+Pyrazinamide,129
+Ethambutol,130
+Bedaquiline,131
+Delamanid,132
+Clofazimine,133
+Dapsone,134
+Mupirocin,135
+Fusidic Acid,136
+Retapamulin,137
+Bacitracin,138
+Polymyxin B Sulfate,139
+Silver Sulfadiazine,140
+Fluconazole,141
+Itraconazole,142
+Voriconazole,143
+Posaconazole,144
+Isavuconazole,145
+Ketoconazole,146
+Clotrimazole,147
+Miconazole,148
+Econazole,149
+Terbinafine,150
+Griseofulvin,151
+Nystatin,152
+Amphotericin B,153
+Caspofungin,154
+Micafungin,155
+Anidulafungin,156
+Flucytosine,157
+Ciclopirox,158
+Amorolfine,159
+Butenafine,160
+Acyclovir,161
+Valacyclovir,162
+Famciclovir,163
+Ganciclovir,164
+Valganciclovir,165
+Oseltamivir,166
+Zanamivir,167
+Peramivir,168
+Remdesivir,169
+Ribavirin,170
+Sofosbuvir,171
+Ledipasvir,172
+Velpatasvir,173
+Daclatasvir,174
+Glecaprevir,175
+Pibrentasvir,176
+Tenofovir,177
+Entecavir,178
+Lamivudine,179
+Zidovudine,180
+Abacavir,181
+Dolutegravir,182
+Bictegravir,183
+Raltegravir,184
+Efavirenz,185
+Nevirapine,186
+Rilpivirine,187
+Atazanavir,188
+Darunavir,189
+Ritonavir,190
+Lopinavir,191
+Cobicistat,192
+Emtricitabine,193
+Maraviroc,194
+Nirmatrelvir,195
+Ritonavir Combination,196
+Interferon Alfa,197
+Peginterferon Alfa,198
+Enfuvirtide,199
+Baloxavir,200
+Albendazole,201
+Mebendazole,202
+Ivermectin,203
+Praziquantel,204
+Pyrantel Pamoate,205
+Levamisole,206
+Diethylcarbamazine,207
+Niclosamide,208
+Nitazoxanide,209
+Permethrin,210
+Benzyl Benzoate,211
+Lindane,212
+Malathion,213
+Piperazine,214
+Pyrantel Embonate,215
+Artemether,216
+Lumefantrine,217
+Artesunate,218
+Chloroquine,219
+Hydroxychloroquine Sulfate,220
+Quinine,221
+Mefloquine,222
+Primaquine,223
+Tafenoquine,224
+Atovaquone,225
+Proguanil,226
+Pyrimethamine,227
+Sulfadoxine,228
+Dihydroartemisinin,229
+Piperaquine,230
+Metformin,231
+Glimepiride,232
+Glipizide,233
+Gliclazide,234
+Glyburide,235
+Sitagliptin,236
+Linagliptin,237
+Saxagliptin,238
+Vildagliptin,239
+Alogliptin,240
+Empagliflozin,241
+Dapagliflozin,242
+Canagliflozin,243
+Ertugliflozin,244
+Pioglitazone,245
+Rosiglitazone,246
+Acarbose,247
+Miglitol,248
+Repaglinide,249
+Nateglinide,250
+Liraglutide,251
+Semaglutide,252
+Dulaglutide,253
+Exenatide,254
+Tirzepatide,255
+Insulin Regular,256
+Insulin NPH,257
+Insulin Glargine,258
+Insulin Detemir,259
+Insulin Degludec,260
+Insulin Lispro,261
+Insulin Aspart,262
+Insulin Glulisine,263
+Glucagon,264
+Pramlintide,265
+Levothyroxine,266
+Liothyronine,267
+Carbimazole,268
+Methimazole,269
+Propylthiouracil,270
+Potassium Iodide,271
+Lugol's Iodine,272
+Calcitriol,273
+Alfacalcidol,274
+Cinacalcet,275
+Paricalcitol,276
+Desmopressin,277;651
+Vasopressin,278
+Octreotide,279
+Lanreotide,280
+Somatropin,281
+Pegvisomant,282
+Cabergoline,283
+Bromocriptine,284
+Leuprolide,285
+Goserelin,286
+Triptorelin,287
+Histrelin,288
+Degarelix,289
+Relugolix,290
+Estradiol,291
+Estriol,292
+Progesterone,293
+Medroxyprogesterone,294
+Norethisterone,295
+Dydrogesterone,296
+Levonorgestrel,297
+Etonogestrel,298
+Desogestrel,299
+Drospirenone,300
+Ethinylestradiol,301
+Clomiphene,302
+Letrozole,303
+Tamoxifen,304
+Anastrozole,305
+Exemestane,306
+Raloxifene,307
+Toremifene,308
+Testosterone,309
+Finasteride,310
+Dutasteride,311
+Sildenafil,312
+Tadalafil,313
+Vardenafil,314
+Alprostadil,315
+Oxybutynin,316
+Tolterodine,317
+Solifenacin,318
+Darifenacin,319
+Mirabegron,320
+Tamsulosin,321
+Alfuzosin,322
+Silodosin,323
+Doxazosin,324
+Terazosin,325
+Finasteride-Dutasteride,326
+Furosemide,327
+Torsemide,328
+Bumetanide,329
+Hydrochlorothiazide,330
+Chlorthalidone,331
+Indapamide,332
+Spironolactone,333
+Eplerenone,334
+Amiloride,335
+Triamterene,336
+Acetazolamide,337;787;933
+Mannitol,338;788
+Glycerol,339
+Tolvaptan,340
+Conivaptan,341
+Desmopressin Acetate,342
+Potassium Chloride,343
+Sodium Chloride,344
+Sodium Bicarbonate,345
+Calcium Gluconate,346
+Calcium Carbonate,347
+Calcium Citrate,348
+Magnesium Sulfate,349
+Magnesium Hydroxide,350
+Amlodipine,351
+Nifedipine,352
+Felodipine,353
+Nicardipine,354
+Nimodipine,355;789
+Verapamil,356
+Diltiazem,357
+Lercanidipine,358
+Isradipine,359
+Cilnidipine,360
+Enalapril,361
+Lisinopril,362
+Ramipril,363
+Perindopril,364
+Captopril,365
+Fosinopril,366
+Quinapril,367
+Benazepril,368
+Losartan,369
+Valsartan,370
+Telmisartan,371
+Olmesartan,372
+Irbesartan,373
+Candesartan,374;778
+Azilsartan,375
+Sacubitril-Valsartan,376
+Atenolol,377
+Metoprolol,378
+Bisoprolol,379
+Carvedilol,380
+Nebivolol,381
+Propranolol,382;777
+Labetalol,383
+Esmolol,384
+Sotalol,385
+Nadolol,386
+Timolol,387
+Pindolol,388
+Acebutolol,389
+Diltiazem Hydrochloride,390
+Hydralazine,391
+Minoxidil,392
+Methyldopa,393
+Clonidine,394;757
+Moxonidine,395
+Prazosin,396
+Phentolamine,397
+Sodium Nitroprusside,398
+Nitroglycerin,399
+Isosorbide Mononitrate,400
+Isosorbide Dinitrate,401
+Nicorandil,402
+Ranolazine,403
+Ivabradine,404
+Digoxin,405
+Dobutamine,406
+Dopamine,407
+Norepinephrine,408
+Epinephrine,409
+Milrinone,410
+Amiodarone,411
+Dronedarone,412
+Flecainide,413
+Propafenone,414
+Quinidine,415
+Procainamide,416
+Adenosine,417
+Atropine,418
+Lidocaine Injection,419
+Magnesium Sulfate Injection,420
+Warfarin,421
+Heparin,422
+Enoxaparin,423
+Dalteparin,424
+Fondaparinux,425
+Rivaroxaban,426
+Apixaban,427
+Dabigatran,428
+Edoxaban,429
+Clopidogrel,430
+Prasugrel,431
+Ticagrelor,432
+Ticlopidine,433
+Dipyridamole,434
+Cilostazol,435
+Aspirin-Dipyridamole,436
+Alteplase,437
+Tenecteplase,438
+Streptokinase,439
+Tranexamic Acid,440;652
+Aminocaproic Acid,441
+Phytonadione,442
+Protamine Sulfate,443
+Idarucizumab,444
+Andexanet Alfa,445
+Atorvastatin,446
+Rosuvastatin,447
+Simvastatin,448
+Pravastatin,449
+Lovastatin,450
+Fluvastatin,451
+Pitavastatin,452
+Ezetimibe,453
+Fenofibrate,454
+Gemfibrozil,455
+Bezafibrate,456
+Ciprofibrate,457
+Omega-3 Acid Ethyl Esters,458
+Icosapent Ethyl,459
+Alirocumab,460
+Evolocumab,461
+Inclisiran,462
+Bempedoic Acid,463
+Cholestyramine,464
+Colesevelam,465
+Colestipol,466
+Niacin,467
+Acetylcysteine,468
+Ambroxol,469
+Bromhexine,470
+Guaifenesin,471
+Carbocisteine,472
+Dextromethorphan,473
+Levodropropizine,474
+Benzonatate,475
+Codeine Phosphate,476
+Salbutamol,477
+Terbutaline,478
+Formoterol,479
+Salmeterol,480
+Indacaterol,481
+Olodaterol,482
+Vilanterol,483
+Ipratropium,484
+Tiotropium,485
+Umeclidinium,486
+Glycopyrronium,487
+Aclidinium,488
+Theophylline,489
+Aminophylline,490
+Montelukast,491
+Zafirlukast,492
+Zileuton,493
+Omalizumab,494
+Mepolizumab,495
+Benralizumab,496
+Dupilumab,497
+Tezepelumab,498
+Cromolyn Sodium,499
+Nedocromil,500
+Cetirizine,501
+Levocetirizine,502
+Loratadine,503
+Desloratadine,504
+Fexofenadine,505
+Chlorpheniramine,506
+Diphenhydramine,507
+Promethazine,508
+Hydroxyzine,509;751
+Cyproheptadine,510
+Bilastine,511
+Rupatadine,512
+Ebastine,513
+Ketotifen,514
+Clemastine,515
+Azelastine,516
+Olopatadine,517
+Epinephrine Auto-Injector,518
+Famotidine,519
+Cimetidine,520
+Nizatidine,521
+Omeprazole,522
+Esomeprazole,523
+Lansoprazole,524
+Pantoprazole,525
+Rabeprazole,526
+Dexlansoprazole,527
+Vonoprazan,528
+Sucralfate,529
+Bismuth Subsalicylate,530
+Misoprostol,531
+Calcium Carbonate Antacid,532
+Aluminium Hydroxide,533
+Magnesium Trisilicate,534
+Sodium Alginate,535
+Simethicone,536
+Domperidone,537
+Metoclopramide,538
+Ondansetron,539
+Granisetron,540
+Palonosetron,541
+Aprepitant,542
+Fosaprepitant,543
+Prochlorperazine,544
+Itopride,545
+Levosulpiride,546
+Mosapride,547
+Prucalopride,548
+Lactulose,549
+Polyethylene Glycol,550
+Bisacodyl,551
+Senna,552
+Sodium Picosulfate,553
+Docusate Sodium,554
+Psyllium Husk,555
+Methylcellulose,556
+Loperamide,557
+Racecadotril,558
+Oral Rehydration Salts,559
+Zinc Sulfate,560
+Mesalazine,561
+Balsalazide,563
+Olsalazine,564
+Infliximab,565
+Adalimumab,566
+Vedolizumab,567
+Ustekinumab,568
+Tofacitinib,569
+Upadacitinib,570
+Baricitinib,571
+Filgotinib,572
+Rifaximin,574
+Linaclotide,575
+Lubiprostone,576
+Eluxadoline,577
+Dicyclomine,578
+Hyoscine Butylbromide,579
+Mebeverine,580
+Pinaverium,581
+Alverine,582
+Trimebutine,583
+Ursodeoxycholic Acid,584
+Chenodeoxycholic Acid,585
+Obeticholic Acid,586
+Pancrelipase,587
+Pancreatin,588
+Orlistat,589
+Naltrexone,590;764
+Naloxone,591
+Methylnaltrexone,592
+Naloxegol,593
+Alvimopan,594
+Cholestyramine Resin,595
+Hyoscine Hydrobromide,596
+Glycopyrrolate,597
+Aclidinium Bromide,598
+Activated Charcoal,599
+Oral Rehydration Solution,600
+Ferrous Sulfate,601
+Ferrous Fumarate,602
+Ferrous Gluconate,603
+Ferric Carboxymaltose,604
+Iron Sucrose,605
+Iron Dextran,606
+Folic Acid,607
+Cyanocobalamin,608
+Hydroxocobalamin,609
+Methylcobalamin,610
+Thiamine,611
+Riboflavin,612
+Niacinamide,613
+Pyridoxine,614
+Biotin,615
+Pantothenic Acid,616
+Ascorbic Acid,617
+Cholecalciferol,618
+Ergocalciferol,619
+Vitamin A,620
+Vitamin E,621
+Vitamin K,622
+Calcium Lactate,623
+Calcium Phosphate,624
+Magnesium Oxide,625
+Magnesium Citrate,626
+Zinc Gluconate,627
+Zinc Acetate,628
+Copper Sulfate,629
+Selenium,630
+Potassium Phosphate,631
+Sodium Phosphate,632
+Sodium Citrate,633
+Potassium Citrate,634
+Sodium Polystyrene Sulfonate,635
+Patiromer,636
+Sodium Zirconium Cyclosilicate,637
+Sevelamer,638
+Lanthanum Carbonate,639
+Ferric Citrate,640
+Epoetin Alfa,641
+Darbepoetin Alfa,642
+Methoxy Polyethylene Glycol-Epoetin Beta,643
+Filgrastim,644
+Pegfilgrastim,645
+Lenograstim,646
+Sargramostim,647
+Romiplostim,648
+Eltrombopag,649
+Avatrombopag,650
+Hydroxyurea,653
+Deferasirox,654
+Deferiprone,655
+Deferoxamine,656
+Levodopa,657
+Carbidopa,658
+Benserazide,659
+Pramipexole,660
+Ropinirole,661
+Rotigotine,662
+Selegiline,663
+Rasagiline,664
+Safinamide,665
+Entacapone,666
+Tolcapone,667
+Opicapone,668
+Amantadine,669
+Trihexyphenidyl,670
+Benztropine,671
+Baclofen,672
+Tizanidine,673
+Cyclobenzaprine,674
+Methocarbamol,675
+Chlorzoxazone,676
+Orphenadrine,677
+Carisoprodol,678
+Dantrolene,679
+Botulinum Toxin,680
+Gabapentin,681
+Pregabalin,682
+Carbamazepine,683
+Oxcarbazepine,684
+Lamotrigine,685
+Valproic Acid,686
+Sodium Valproate,687
+Levetiracetam,688
+Brivaracetam,689
+Topiramate,690;776
+Zonisamide,691
+Lacosamide,692
+Phenytoin,693
+Fosphenytoin,694
+Phenobarbital,695
+Primidone,696
+Ethosuximide,697
+Clonazepam,698
+Diazepam,699
+Lorazepam,700
+Midazolam,701
+Clobazam,702
+Nitrazepam,703
+Alprazolam,704
+Chlordiazepoxide,705
+Temazepam,706
+Zolpidem,707
+Zopiclone,708
+Eszopiclone,709
+Melatonin,710
+Fluoxetine,711
+Sertraline,712
+Escitalopram,713
+Citalopram,714
+Paroxetine,715
+Fluvoxamine,716
+Venlafaxine,717
+Desvenlafaxine,718
+Duloxetine,719
+Milnacipran,720
+Amitriptyline,721
+Nortriptyline,722
+Imipramine,723
+Clomipramine,724
+Doxepin,725
+Mirtazapine,726
+Bupropion,727
+Trazodone,728
+Vortioxetine,729
+Agomelatine,730
+Lithium Carbonate,731
+Haloperidol,732
+Chlorpromazine,733
+Fluphenazine,734
+Trifluoperazine,735
+Perphenazine,736
+Thioridazine,737
+Risperidone,738
+Paliperidone,739
+Olanzapine,740
+Quetiapine,741
+Aripiprazole,742
+Brexpiprazole,743
+Cariprazine,744
+Lurasidone,745
+Ziprasidone,746
+Clozapine,747
+Amisulpride,748
+Sulpiride,749
+Asenapine,750
+Buspirone,752
+Atomoxetine,753
+Methylphenidate,754
+Dexmethylphenidate,755
+Guanfacine,756
+Donepezil,758
+Rivastigmine,759
+Galantamine,760
+Memantine,761
+Acamprosate,762
+Disulfiram,763
+Nalmefene,765
+Varenicline,766
+Bupropion Hydrochloride,767
+Sumatriptan,768
+Rizatriptan,769
+Zolmitriptan,770
+Eletriptan,771
+Naratriptan,772
+Frovatriptan,773
+Ergotamine,774
+Dihydroergotamine,775
+Erenumab,779
+Fremanezumab,780
+Galcanezumab,781
+Eptinezumab,782
+Rimegepant,783
+Ubrogepant,784
+Atogepant,785
+Caffeine,786
+Citicoline,790
+Levodopa-Carbidopa,791
+Levodopa-Benserazide,792
+Memantine Hydrochloride,793
+Interferon Beta,794
+Glatiramer Acetate,795
+Natalizumab,796
+Ocrelizumab,797
+Fingolimod,798
+Dimethyl Fumarate,799
+Teriflunomide,800
+Cyclophosphamide,801
+Ifosfamide,802
+Fluorouracil,804
+Capecitabine,805
+Cytarabine,806
+Gemcitabine,807
+Azacitidine,808
+Decitabine,809
+Mercaptopurine,810
+Thioguanine,811
+Vincristine,812
+Vinblastine,813
+Vinorelbine,814
+Paclitaxel,815
+Docetaxel,816
+Cabazitaxel,817
+Etoposide,818
+Irinotecan,819
+Topotecan,820
+Doxorubicin,821
+Daunorubicin,822
+Epirubicin,823
+Bleomycin,824
+Dactinomycin,825
+Mitomycin,826
+Mitoxantrone,827
+Cisplatin,828
+Carboplatin,829
+Oxaliplatin,830
+Temozolomide,831
+Procarbazine,832
+Lomustine,833
+Carmustine,834
+Busulfan,835
+Melphalan,836
+Chlorambucil,837
+Bendamustine,838
+Treosulfan,839
+Imatinib,840
+Dasatinib,841
+Nilotinib,842
+Bosutinib,843
+Ponatinib,844
+Erlotinib,845
+Gefitinib,846
+Osimertinib,847
+Afatinib,848
+Lapatinib,849
+Sunitinib,850
+Sorafenib,851
+Regorafenib,852
+Pazopanib,853
+Axitinib,854
+Cabozantinib,855
+Vemurafenib,856
+Dabrafenib,857
+Trametinib,858
+Olaparib,859
+Niraparib,860
+Rucaparib,861
+Talazoparib,862
+Everolimus,863
+Temsirolimus,864
+Sirolimus,865
+Rituximab,866
+Trastuzumab,867
+Pertuzumab,868
+Bevacizumab,869
+Cetuximab,870
+Panitumumab,871
+Nivolumab,872
+Pembrolizumab,873
+Atezolizumab,874
+Durvalumab,875
+Ipilimumab,876
+Brentuximab Vedotin,877
+Daratumumab,878
+Bortezomib,879
+Carfilzomib,880
+Lenalidomide,881
+Pomalidomide,882
+Thalidomide,883
+Alectinib,884
+Crizotinib,885
+Lorlatinib,886
+Palbociclib,887
+Ribociclib,888
+Abemaciclib,889
+Fulvestrant,890
+Enzalutamide,891
+Apalutamide,892
+Abiraterone,893
+Radium-223,894
+Denosumab,895
+Zoledronic Acid,896
+Pamidronate,897
+Ibandronate,898
+Alendronate,899
+Risedronate,900
+Timolol Eye Drops,901
+Latanoprost,902
+Travoprost,903
+Bimatoprost,904
+Tafluprost,905
+Brimonidine,906
+Brinzolamide,907
+Dorzolamide,908
+Betaxolol,909
+Carteolol,910
+Pilocarpine,911
+Tropicamide,912
+Cyclopentolate,913
+Atropine Eye Drops,914
+Phenylephrine Eye Drops,915
+Fluorescein,916
+Sodium Hyaluronate Eye Drops,917
+Carboxymethylcellulose Eye Drops,918
+Hypromellose,919
+Chloramphenicol Eye Drops,920
+Ofloxacin Eye Drops,921
+Moxifloxacin Eye Drops,922
+Tobramycin Eye Drops,923
+Gatifloxacin Eye Drops,924
+Erythromycin Eye Ointment,925
+Gentamicin Eye Drops,926
+Prednisolone Eye Drops,927
+Dexamethasone Eye Drops,928
+Ketorolac Eye Drops,929
+Olopatadine Eye Drops,930
+Ketotifen Eye Drops,931
+Sodium Cromoglicate Eye Drops,932
+Ranibizumab,934
+Aflibercept,935
+Bevacizumab Injection,936
+Verteporfin,937
+Cyclosporine Eye Drops,938
+Lifitegrast,939
+Loteprednol,940
+Brimonidine-Timolol,941
+Dorzolamide-Timolol,942
+Latanoprost-Timolol,943
+Travoprost-Timolol,944
+Mometasone,945
+Clobetasol,946
+Clobetasone,947
+Desonide,948
+Fluocinolone,949
+Fluocinonide,950
+Calcipotriol,951
+Calcitriol Ointment,952
+Tacrolimus Ointment,953
+Pimecrolimus,954
+Tretinoin,955
+Adapalene,956
+Isotretinoin,957
+Benzoyl Peroxide,958
+Azelaic Acid,959
+Salicylic Acid,960
+Glycolic Acid,961
+Hydroquinone,962
+Kojic Acid,963
+Permethrin Cream,964
+Crotamiton,965
+Coal Tar,966
+Calamine,967
+Zinc Oxide,968
+Silver Nitrate,969
+Podophyllotoxin,970
+Imiquimod,971
+5-Fluorouracil Cream,972
+Ingenol Mebutate,973
+Eflornithine,974
+Minoxidil Topical,975
+Finasteride Topical,976
+Ketoconazole Shampoo,977
+Selenium Sulfide,978
+Ciclopirox Shampoo,979
+Terbinafine Cream,980
+Clotrimazole Cream,981
+Miconazole Cream,982
+Econazole Cream,983
+Nystatin Cream,984
+Mupirocin Ointment,985
+Fusidic Acid Cream,986
+Retapamulin Ointment,987
+Bacitracin Ointment,988
+Neomycin-Polymyxin B,989
+Hydrocortisone Cream,990
+Betamethasone Cream,991
+Mometasone Cream,992
+Triamcinolone Cream,993
+Lidocaine-Prilocaine,994
+Ketoprofen Gel,996
+Povidone-Iodine,997
+Chlorhexidine,998
+Hydrogen Peroxide,999
+Ethanol Antiseptic,1000
