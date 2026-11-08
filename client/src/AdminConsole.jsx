@@ -75,9 +75,9 @@ export default function AdminConsole({children,onClose}) {
   async function decidePharmacist(app,decision){setError('');const notes=window.prompt(decision==='approved'?'Provisional account approval note (credential verification will happen after private document upload):':'अस्वीकृतिको कारण लेख्नुहोस्:')||'';try{await api(`/api/admin/pharmacists/applications/${app.id}`,{method:'PATCH',body:JSON.stringify({decision,notes})});setPharmacistApplications(items=>items.filter(x=>x.id!==app.id));await refresh()}catch(e){setError(e.message)}}
   async function publishMedicineReview(review){setError('');try{await api(`/api/admin/medicines/${review.medicine_id}/publish-verification`,{method:'PATCH',body:JSON.stringify({})});setMedicineReviews(items=>items.filter(x=>x.medicine_id!==review.medicine_id));setMessage('Pharmacist review प्रकाशित भयो।')}catch(e){setError(e.message)}}
   async function verifyPharmacistCredential(account){
-    const checkedAgainst=window.prompt('कुन आधिकारिक Register/स्रोतमा registration र credential जाँच गर्नुभयो?')||'';
+    const checkedAgainst=window.prompt('कुन आधिकारिक Register/स्रोतमा uploaded credential जाँच गर्नुभयो?')||'';
     if(checkedAgainst.trim().length<5)return;
-    const notes=window.prompt('Credential review note (optional):')||'';
+    const notes=window.prompt('Credential review note:')||'';
     setError('');setBusy(true);
     try{
       const d=await api(`/api/admin/pharmacists/accounts/${account.id}/credential`,{method:'PATCH',body:JSON.stringify({checkedAgainst:checkedAgainst.trim(),notes})});
