@@ -398,10 +398,10 @@ router.get('/medicine-reviews', async (req,res,next) => {
               r.id AS review_id,r.recommendation,r.clinical_notes,r.sources,r.reviewed_at,
               u.name AS pharmacist_name,p.registration_number
        FROM medicines m
-       JOIN medicine_reviews r ON r.medicine_id=m.id
+       JOIN medicine_reviews r ON r.medicine_id=m.id AND r.reviewed_at >= m.updated_at
        JOIN users u ON u.id=r.pharmacist_id
-       JOIN pharmacist_profiles p ON p.user_id=u.id
-       WHERE m.verification_status <> 'verified'
+       JOIN pharmacist_profiles p ON p.user_id=u.id AND p.is_credential_active=TRUE
+       WHERE m.verification_status <> 'verified' AND u.is_active=TRUE
        ORDER BY m.id,r.reviewed_at DESC`
     );
     res.json({ reviews: result.rows });
@@ -416,6 +416,7 @@ router.patch('/medicines/:id/publish-verification', async (req,res,next) => {
     const review = await client.query(
       `SELECT r.id,r.recommendation,r.clinical_notes,r.pharmacist_id,p.registration_number
        FROM medicine_reviews r
+       JOIN medicines m ON m.id=r.medicine_id AND r.reviewed_at >= m.updated_at
        JOIN pharmacist_profiles p ON p.user_id=r.pharmacist_id AND p.is_credential_active=TRUE
        JOIN users u ON u.id=r.pharmacist_id AND u.is_active=TRUE
        WHERE r.medicine_id=$1 ORDER BY r.reviewed_at DESC LIMIT 1`,
@@ -446,6 +447,42 @@ router.patch('/medicines/:id/publish-verification', async (req,res,next) => {
     if (open) await client.query('ROLLBACK');
     next(e);
   } finally { client.release(); }
+});
+
+
+router.get('/pharmacists/accounts', async (req,res,next) => {
+  try {
+    const result = await pool.query(
+      `SELECT u.id,u.name,u.email,u.is_active,p.qualification,p.registration_number,
+              p.issuing_authority,p.is_credential_active,p.credential_verified_at,
+              reviewer.name AS verified_by_name
+       FROM pharmacist_profiles p JOIN users u ON u.id=p.user_id
+       LEFT JOIN users reviewer ON reviewer.id=p.credential_verified_by
+       ORDER BY p.credential_verified_at DESC`
+    );
+    res.json({ pharmacists: result.rows });
+  } catch (e) { next(e); }
+});
+
+router.patch('/pharmacists/accounts/:id/status', async (req,res,next) => {
+  try {
+    const active = req.body?.active;
+    if (typeof active !== 'boolean') return res.status(400).json({ error: 'active true वा false हुनुपर्छ।' });
+    const result = await pool.query(
+      `UPDATE users u SET is_active=$1,updated_at=NOW()
+       FROM pharmacist_profiles p
+       WHERE u.id=$2 AND p.user_id=u.id
+       RETURNING u.id,u.name,u.email,u.is_active`,
+      [active,req.params.id]
+    );
+    if (!result.rowCount) return res.status(404).json({ error: 'Pharmacist account भेटिएन।' });
+    await pool.query(
+      'UPDATE pharmacist_profiles SET is_credential_active=$1 WHERE user_id=$2',
+      [active,req.params.id]
+    );
+    await audit(req.user.id,active?'pharmacist_credential_reactivated':'pharmacist_credential_suspended','pharmacist',req.params.id,{active});
+    res.json({ pharmacist: result.rows[0] });
+  } catch (e) { next(e); }
 });
 
 export default router;
