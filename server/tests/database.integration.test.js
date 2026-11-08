@@ -34,6 +34,8 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
   const password = 'StrongPass123!';
   let userId;
   let adminId;
+  let sellerProductId;
+  let categoryId;
   const pharmacistEmail = `pharmacist-${randomUUID()}@example.test`;
   const pharmacistRegistration = `NPC-${randomUUID()}`;
 
@@ -67,6 +69,31 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
     assert.equal(tickets.body.tickets.length, 1);
     assert.equal(tickets.body.tickets[0].id, ticket.body.ticket.id);
 
+    const categoryName = `Integration Category ${randomUUID().slice(0,8)}`;
+    const category = await pool.query(
+      'INSERT INTO categories(name,slug) VALUES($1,$2) RETURNING id',
+      [categoryName,`integration-${randomUUID()}`]
+    );
+    categoryId = category.rows[0].id;
+    const sellerProfile = await request(app)
+      .post('/api/seller/profile')
+      .set('Cookie',cookie)
+      .set('Origin',config.clientOrigins[0])
+      .send({businessName:'Integration Pharmacy Store',description:'Integration test seller profile'});
+    assert.equal(sellerProfile.status,201);
+    await pool.query("UPDATE sellers SET verification_status='verified' WHERE user_id=$1",[userId]);
+    const listing = await request(app)
+      .post('/api/seller/products')
+      .set('Cookie',cookie)
+      .set('Origin',config.clientOrigins[0])
+      .send({name:'Integration Test Product',description:'A sufficiently detailed product description for integration testing.',categoryId,price:125,stock:8});
+    assert.equal(listing.status,201);
+    assert.equal(listing.body.product.status,'pending');
+    sellerProductId = listing.body.product.id;
+    const sellerProducts = await request(app).get('/api/seller/products').set('Cookie',cookie);
+    assert.equal(sellerProducts.status,200);
+    assert.equal(sellerProducts.body.products.length,1);
+
     const cart = await request(app).get('/api/cart').set('Cookie', cookie);
     assert.equal(cart.status, 200);
     const removeCartItem = await request(app).delete('/api/cart/items/999999').set('Cookie', cookie).set('Origin', config.clientOrigins[0]);
@@ -84,6 +111,16 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
       ['Integration Admin',adminEmail,'test-hash-not-used-for-login']
     );
     adminId = admin.rows[0].id;
+    const approvedListing = await request(app)
+      .patch(`/api/admin/products/${sellerProductId}/approve`)
+      .set('Cookie',adminCookie)
+      .set('Origin',config.clientOrigins[0])
+      .send({status:'approved'});
+    assert.equal(approvedListing.status,200);
+    const publicListing = await request(app).get(`/api/products/${sellerProductId}`);
+    assert.equal(publicListing.status,200);
+    assert.equal(publicListing.body.product.name,'Integration Test Product');
+
     const application = await pool.query(
       `INSERT INTO pharmacist_applications(full_name,email,password_hash,qualification,registration_number,issuing_authority)
        VALUES($1,$2,$3,$4,$5,$6) RETURNING id`,
@@ -135,6 +172,8 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
     assert.equal(login.body.user.id, userId);
   } finally {
     await pool.query('DELETE FROM pharmacist_applications WHERE email=$1',[pharmacistEmail]);
+    if (sellerProductId) await pool.query('DELETE FROM products WHERE id=$1',[sellerProductId]);
+    if (categoryId) await pool.query('DELETE FROM categories WHERE id=$1',[categoryId]);
     if (adminId) {
       await pool.query('DELETE FROM audit_logs WHERE actor_id=$1',[adminId]);
       await pool.query('DELETE FROM users WHERE id=$1',[adminId]);
