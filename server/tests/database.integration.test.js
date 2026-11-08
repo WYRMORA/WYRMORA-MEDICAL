@@ -69,6 +69,17 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
     assert.equal(tickets.body.tickets.length, 1);
     assert.equal(tickets.body.tickets[0].id, ticket.body.ticket.id);
 
+    const cart = await request(app).get('/api/cart').set('Cookie', cookie);
+    assert.equal(cart.status, 200);
+    const removeCartItem = await request(app).delete('/api/cart/items/999999').set('Cookie', cookie).set('Origin', config.clientOrigins[0]);
+    assert.equal(removeCartItem.status, 204);
+    const checkout = await request(app)
+      .post('/api/orders')
+      .set('Cookie', cookie)
+      .set('Origin', config.clientOrigins[0])
+      .send({ shippingAddress: '123 Main Street, Kathmandu' });
+    assert.equal(checkout.status, 403);
+
     const categoryName = `Integration Category ${randomUUID().slice(0,8)}`;
     const category = await pool.query(
       'INSERT INTO categories(name,slug) VALUES($1,$2) RETURNING id',
@@ -94,16 +105,6 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
     assert.equal(sellerProducts.status,200);
     assert.equal(sellerProducts.body.products.length,1);
 
-    const cart = await request(app).get('/api/cart').set('Cookie', cookie);
-    assert.equal(cart.status, 200);
-    const removeCartItem = await request(app).delete('/api/cart/items/999999').set('Cookie', cookie).set('Origin', config.clientOrigins[0]);
-    assert.equal(removeCartItem.status, 204);
-    const checkout = await request(app)
-      .post('/api/orders')
-      .set('Cookie', cookie)
-      .set('Origin', config.clientOrigins[0])
-      .send({ shippingAddress: '123 Main Street, Kathmandu' });
-    assert.equal(checkout.status, 403);
 
     const adminEmail = `integration-admin-${randomUUID()}@example.test`;
     const admin = await pool.query(
