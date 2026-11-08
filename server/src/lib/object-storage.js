@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { fileTypeFromBuffer } from 'file-type';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const bucket = process.env.PRIVATE_ASSETS_BUCKET;
@@ -35,7 +36,10 @@ export async function inspectUploadedObject(key) {
     throw error;
   }
   const result = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
-  return { sizeBytes: Number(result.ContentLength || 0), contentType: result.ContentType || '' };
+  const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  const bytes = await object.Body.transformToByteArray();
+  const detected = await fileTypeFromBuffer(bytes);
+  return { sizeBytes: Number(result.ContentLength || 0), contentType: result.ContentType || '', detectedContentType: detected?.mime || '' };
 }
 
 export async function createDownloadUrl(key) {
