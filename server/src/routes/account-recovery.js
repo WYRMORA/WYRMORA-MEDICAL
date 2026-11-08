@@ -119,7 +119,7 @@ router.post('/password-reset/confirm', limiter, async (req, res, next) => {
       return res.status(400).json({ error: 'The reset link or new password is invalid.' });
     }
     const passwordHash = await bcrypt.hash(password, 12);
-    await client.query('UPDATE users SET password_hash=$1,updated_at=NOW() WHERE id=$2', [passwordHash, found.rows[0].user_id]);
+    await client.query('UPDATE users SET password_hash=$1,session_version=session_version+1,updated_at=NOW() WHERE id=$2 AND is_active=true', [passwordHash, found.rows[0].user_id]);
     await client.query('UPDATE account_tokens SET consumed_at=NOW() WHERE user_id=$1 AND purpose IN (\'password_reset\',\'email_verification\') AND consumed_at IS NULL', [found.rows[0].user_id]);
     await client.query('COMMIT');
     return res.json({ message: 'Password updated. Please sign in again.' });
