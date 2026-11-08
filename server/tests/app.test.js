@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import express from 'express';
 import { spawnSync } from 'node:child_process';
+import jwt from 'jsonwebtoken';
+import { pool } from '../src/db.js';
+import { config } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { emailSchema } from '../src/lib/validation.js';
 import { applicationSchema, createApplicationLimit, reviewSchema } from '../src/routes/pharmacist.js';
@@ -169,4 +172,42 @@ test('demo seed script refuses to run in production mode', () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Demo seed is disabled in production/);
   assert.doesNotMatch(result.stderr, /ECONNREFUSED|connect ECONN/);
+});
+
+test('transaction routes forward database connection failures to the JSON error handler', async () => {
+  const originalQuery = pool.query;
+  const originalConnect = pool.connect;
+  pool.query = async () => ({
+    rows: [{ id: '42', name: 'Test User', email: 'test@example.com', role: 'customer', is_active: true }],
+    rowCount: 1
+  });
+  pool.connect = async () => {
+    throw new Error('simulated database connection failure');
+  };
+
+  try {
+    const token = jwt.sign(
+      { email: 'test@example.com' },
+      config.jwtSecret,
+      { subject: '42', issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
+    );
+    const app = createApp();
+    const requests = [
+      ['/api/orders', { shippingAddress: '123 Main Street, Kathmandu' }],
+      ['/api/cart/items', { productId: 1, quantity: 1 }]
+    ];
+
+    for (const [path, body] of requests) {
+      const response = await request(app)
+        .post(path)
+        .set('Cookie', `${config.cookieName}=${token}`)
+        .set('Origin', config.clientOrigins[0])
+        .send(body);
+      assert.equal(response.status, 500);
+      assert.equal(response.body.error, 'An unexpected server error occurred.');
+    }
+  } finally {
+    pool.query = originalQuery;
+    pool.connect = originalConnect;
+  }
 });
