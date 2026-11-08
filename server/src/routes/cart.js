@@ -4,12 +4,6 @@ import { requireAuth, allowRoles } from '../middleware/auth.js';
 import { config } from '../config.js';
 const router = Router();
 router.use(requireAuth, allowRoles('customer'));
-router.use((req, res, next) => {
-  if (!config.enableMarketplaceOrders) {
-    return res.status(403).json({ error: 'Marketplace checkout is disabled until required legal, pharmacy and payment approvals are complete.' });
-  }
-  next();
-});
 
 router.get('/', async (req, res, next) => {
   try {
@@ -26,7 +20,7 @@ router.get('/', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/items', async (req, res, next) => {
+router.post('/items', (req,res,next) => config.enableMarketplaceOrders ? next() : res.status(403).json({ error: 'Marketplace checkout is disabled until required legal, pharmacy and payment approvals are complete.' }), async (req, res, next) => {
   let client;
   let transactionOpen = false;
   try {
