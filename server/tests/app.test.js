@@ -177,6 +177,8 @@ test('demo seed script refuses to run in production mode', () => {
 test('transaction routes forward database connection failures to the JSON error handler', async () => {
   const originalQuery = pool.query;
   const originalConnect = pool.connect;
+  const originalMarketplaceFlag = config.enableMarketplaceOrders;
+  config.enableMarketplaceOrders = true;
   pool.query = async () => ({
     rows: [{ id: '42', name: 'Test User', email: 'test@example.com', role: 'customer', is_active: true }],
     rowCount: 1
