@@ -18,7 +18,7 @@ Create a private bucket with public access blocked, TLS enforced, and server-sid
 1. Authenticated seller/pharmacist requests POST /api/uploads/presign with purpose, fileName, contentType, and sizeBytes.
 2. Client uploads raw bytes with HTTP PUT and the exact signed Content-Type header.
 3. Client calls POST /api/uploads/:id/complete.
-4. The server verifies object size and content type with HEAD before marking it uploaded.
+4. The server verifies object size and declared content type with HEAD, then reads the private object and detects its file signature before marking it uploaded. A mismatch is rejected.
 5. Authorized owner requests GET /api/uploads/:id/download for a 120-second private URL.
 
 Product images allow JPEG/PNG/WebP up to 5 MiB. Credential documents allow PDF/JPEG/PNG up to 10 MiB. The API stores only metadata and generated object keys, not public URLs.
