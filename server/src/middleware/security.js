@@ -20,7 +20,8 @@ export function notFound(req, res) {
 
 export function errorHandler(err, req, res, next) {
   if (res.headersSent) return next(err);
-  console.error(err);
+  // Do not print raw database errors, SQL details or user-provided values to provider logs.
+  console.error('API request failed:', { name: err.name, code: err.code, status: err.status });
   const status = Number(err.status) || 500;
   res.status(status).json({
     error: status >= 500 ? 'An unexpected server error occurred.' : err.message

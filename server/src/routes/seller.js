@@ -29,7 +29,7 @@ router.post('/profile', allowRoles('customer','seller'), async (req, res, next) 
       );
       await client.query("UPDATE users SET role='seller' WHERE id=$1 AND role='customer'", [req.user.id]);
       await client.query('COMMIT');
-    } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+    } catch (e) { await client.query('ROLLBACK').catch(() => {}); throw e; } finally { client.release(); }
     res.status(201).json({ message: 'Seller profile saved. Any changed business details require Super Admin re-verification before listing products.' });
   } catch (e) { next(e); }
 });

@@ -39,7 +39,7 @@ router.post('/bootstrap-super-admin',async(req,res,next)=>{
    const created=await client.query("INSERT INTO users(name,email,password_hash,role) VALUES($1,$2,$3,'super_admin') RETURNING id,name,email,role",[cleanName,cleanEmail,hash]);
    await client.query("INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata) VALUES($1,'super_admin_bootstrap','user',$2,$3)",[created.rows[0].id,String(created.rows[0].id),JSON.stringify({email:cleanEmail})]);
    await client.query('COMMIT');setSession(res,created.rows[0]);return res.status(201).json({user:created.rows[0]});
-  }catch(error){await client.query('ROLLBACK');if(error.code==='23505')return res.status(409).json({error:'An account with this email already exists.'});throw error;}finally{client.release();}
+  }catch(error){await client.query('ROLLBACK').catch(()=>{});if(error.code==='23505')return res.status(409).json({error:'An account with this email already exists.'});throw error;}finally{client.release();}
  }catch(err){next(err);}
 });
 router.post('/logout',(req,res)=>{res.clearCookie(config.cookieName,{...cookieOptions(),maxAge:undefined});res.status(204).end();});
