@@ -10,8 +10,9 @@ Uploads use S3-compatible private object storage (AWS S3 or Cloudflare R2). Obje
 - S3_ACCESS_KEY_ID
 - S3_SECRET_ACCESS_KEY
 - S3_FORCE_PATH_STYLE=true only when required by the provider
+- S3_SERVER_SIDE_ENCRYPTION=AES256 only when supported and desired by the selected provider (omit for R2 if unsupported)
 
-Create a private bucket with public access blocked, TLS enforced, and server-side encryption enabled. Restrict the service credentials to this bucket only. Configure lifecycle cleanup for abandoned pending uploads. Never commit credentials.
+Create a private bucket with public access blocked, TLS enforced, and server-side encryption enabled. Configure bucket CORS to allow PUT from the exact frontend origin and only the required Content-Type header. Restrict the service credentials to this bucket only. Configure lifecycle cleanup for abandoned pending uploads. Never commit credentials.
 
 ## Flow
 
