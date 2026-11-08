@@ -9,4 +9,6 @@ export const pool = new Pool({
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000
 });
-pool.on('error', (err) => console.error('Unexpected PostgreSQL pool error:', err.message));
+
+// Pool-level errors can contain connection or SQL details. Log only the code.
+pool.on('error', (err) => console.error('Unexpected PostgreSQL pool error:', { code: err.code }));
