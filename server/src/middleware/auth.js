@@ -6,7 +6,7 @@ export function requireAuth(req,res,next){
  try{
   const payload=jwt.verify(token,config.jwtSecret,{issuer:'wyrmora-api',audience:'wyrmora-client'});
   pool.query('SELECT id,name,email,role,is_active,session_version FROM users WHERE id=$1',[payload.sub]).then(({rows})=>{
-   const user=rows[0];if(!user||!user.is_active||(payload.sessionVersion ?? 0)!==user.session_version){res.clearCookie(config.cookieName,{...cookieOptions(),maxAge:undefined});return res.status(401).json({error:'Account is unavailable.'});}
+   const user=rows[0];if(!user||!user.is_active||(payload.sessionVersion ?? 0)!==(user.session_version ?? 0)){res.clearCookie(config.cookieName,{...cookieOptions(),maxAge:undefined});return res.status(401).json({error:'Account is unavailable.'});}
    req.user={id:String(user.id),name:user.name,email:user.email,role:user.role};next();
   }).catch(next);
  }catch{res.clearCookie(config.cookieName,{...cookieOptions(),maxAge:undefined});return res.status(401).json({error:'Session expired. Please sign in again.'});}
