@@ -2,7 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import { pool } from '../db.js';
-import { createOpaqueToken, hashToken, sendAccountEmail, buildAccountLink } from '../lib/email.js';
+import { createOpaqueToken, hashToken, sendAccountEmail, buildAccountLink, isEmailDeliveryConfigured } from '../lib/email.js';
 
 const router = Router();
 const limiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: 'draft-7', legacyHeaders: false });
@@ -42,6 +42,7 @@ router.post('/email-verification/request', limiter, async (req, res, next) => {
   try {
     const email = String(req.body?.email || '').trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return res.status(400).json({ error: 'Enter a valid email address.' });
+    if (!isEmailDeliveryConfigured()) return res.status(202).json(genericVerify);
     const result = await pool.query('SELECT id,name,email,email_verified_at FROM users WHERE email=$1 AND is_active=true', [email]);
     if (result.rowCount && !result.rows[0].email_verified_at) {
       await issueToken(result.rows[0], 'email_verification', '/verify-email', 'Verify your WYRMORA email', 'Verify your email address to help secure your WYRMORA account.');
@@ -80,6 +81,7 @@ router.post('/password-reset/request', limiter, async (req, res, next) => {
   try {
     const email = String(req.body?.email || '').trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return res.status(400).json({ error: 'Enter a valid email address.' });
+    if (!isEmailDeliveryConfigured()) return res.status(202).json(genericReset);
     const result = await pool.query('SELECT id,name,email FROM users WHERE email=$1 AND is_active=true', [email]);
     if (result.rowCount) {
       await issueToken(result.rows[0], 'password_reset', '/reset-password', 'Reset your WYRMORA password', 'A password reset was requested for your WYRMORA account.');
