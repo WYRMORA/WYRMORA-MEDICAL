@@ -48,7 +48,10 @@ router.post('/email-verification/request', limiter, async (req, res, next) => {
       await issueToken(result.rows[0], 'email_verification', '/verify-email', 'Verify your WYRMORA email', 'Verify your email address to help secure your WYRMORA account.');
     }
     return res.status(202).json(genericVerify);
-  } catch (error) { next(error); }
+  } catch (error) {
+    if (error.status === 502 || error.status === 503) return res.status(202).json(genericVerify);
+    return next(error);
+  }
 });
 
 router.post('/email-verification/confirm', limiter, async (req, res, next) => {
@@ -88,7 +91,10 @@ router.post('/password-reset/request', limiter, async (req, res, next) => {
       await issueToken(result.rows[0], 'password_reset', '/reset-password', 'Reset your WYRMORA password', 'A password reset was requested for your WYRMORA account.');
     }
     return res.status(202).json(genericReset);
-  } catch (error) { next(error); }
+  } catch (error) {
+    if (error.status === 502 || error.status === 503) return res.status(202).json(genericReset);
+    return next(error);
+  }
 });
 
 router.post('/password-reset/confirm', limiter, async (req, res, next) => {
