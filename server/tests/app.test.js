@@ -256,3 +256,29 @@ test('marketplace checkout is disabled by default while customer read-only acces
     pool.query = originalQuery;
   }
 });
+
+
+test('readiness endpoint confirms PostgreSQL connectivity', async () => {
+  const originalQuery = pool.query;
+  pool.query = async () => ({ rows: [{ '?column?': 1 }], rowCount: 1 });
+  try {
+    const response = await request(createApp()).get('/api/health/ready');
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body, { status: 'ok', service: 'wyrmora-api', database: 'ok' });
+  } finally {
+    pool.query = originalQuery;
+  }
+});
+
+test('readiness endpoint returns 503 without exposing database errors', async () => {
+  const originalQuery = pool.query;
+  pool.query = async () => { throw new Error('sensitive database connection detail'); };
+  try {
+    const response = await request(createApp()).get('/api/health/ready');
+    assert.equal(response.status, 503);
+    assert.deepEqual(response.body, { status: 'unavailable', service: 'wyrmora-api', database: 'unavailable' });
+    assert.doesNotMatch(JSON.stringify(response.body), /sensitive database connection detail/);
+  } finally {
+    pool.query = originalQuery;
+  }
+});
