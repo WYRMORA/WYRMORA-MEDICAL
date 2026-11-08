@@ -16,7 +16,8 @@ async function khalti(path, payload) {
   const response = await fetch(`${khaltiBase()}${path}`, {
     method: 'POST',
     headers: { Authorization: `Key ${process.env.KHALTI_SECRET_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(15000)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -30,11 +31,13 @@ async function khalti(path, payload) {
 router.post('/khalti/initiate', allowRoles('customer'), async (req,res,next) => {
   let client;
   let paymentId;
+  let transactionOpen = false;
   try {
     client = await pool.connect();
     if (!config.enableMarketplaceOrders) return res.status(403).json({ error: 'Marketplace payments remain disabled until required approvals are complete.' });
     if (!configured()) return res.status(503).json({ error: 'Khalti payment is not configured.' });
     await client.query('BEGIN');
+    transactionOpen = true;
     const order = await client.query(
       `SELECT id,order_number,total_amount,payment_status,order_status FROM orders
        WHERE id=$1 AND user_id=$2 AND is_test=false FOR UPDATE`,
@@ -53,6 +56,7 @@ router.post('/khalti/initiate', allowRoles('customer'), async (req,res,next) => 
     paymentId = inserted.rows[0].id;
     await client.query("UPDATE orders SET payment_status='pending' WHERE id=$1 AND payment_status<>'paid'",[order.rows[0].id]);
     await client.query('COMMIT');
+    transactionOpen = false;
     const result = await khalti('/epayment/initiate/', {
       return_url: process.env.KHALTI_RETURN_URL,
       website_url: process.env.KHALTI_WEBSITE_URL,
@@ -67,6 +71,7 @@ router.post('/khalti/initiate', allowRoles('customer'), async (req,res,next) => 
     );
     return res.status(201).json({ payment: { id:paymentId,paymentUrl:result.payment_url,pidx:result.pidx,amountPaisa,provider:'khalti' } });
   } catch (e) {
+    if (transactionOpen && client) await client.query('ROLLBACK').catch(() => {});
     if (paymentId) {
       await pool.query("UPDATE payment_transactions SET status='failed',updated_at=NOW() WHERE id=$1 AND status='initiating'",[paymentId]).catch(()=>{});
       await pool.query("UPDATE orders SET payment_status='failed' WHERE id=(SELECT order_id FROM payment_transactions WHERE id=$1) AND payment_status='pending'",[paymentId]).catch(()=>{});
@@ -99,7 +104,7 @@ router.post('/khalti/verify', allowRoles('customer'), async (req,res,next) => {
       );
       if (result.status === 'Completed') {
         await client.query(
-          "UPDATE payment_transactions SET status='completed',provider_status=$1,provider_transaction_id=$2,verified_at=COALESCE(verified_at,NOW()),updated_at=NOW() WHERE id=$3 AND status<>'refunded'",
+          "UPDATE payment_transactions SET status='completed',provider_status=$1,provider_transaction_id=$2,verified_at=COALESCE(verified_at,NOW()),updated_at=NOW() WHERE id=$3 AND status IN ('initiating','pending','failed')",
           [result.status,result.transaction_id||null,payment.id]
         );
         await client.query("UPDATE orders SET payment_status='paid' WHERE id=$1 AND payment_status<>'refunded'",[payment.order_id]);

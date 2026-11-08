@@ -1,0 +1,78 @@
+name: WYRMORA database backup
+
+on:
+  schedule:
+    - cron: '15 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wyrmora-database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: wyrmora_restore_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d wyrmora_restore_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Check backup configuration
+        id: config
+        env:
+          DATABASE_URL: ${{ secrets.WYRMORA_DATABASE_URL }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          BACKUP_S3_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+        shell: bash
+        run: |
+          if [[ -z "$DATABASE_URL" || -z "$BACKUP_S3_BUCKET" || -z "$BACKUP_S3_ENDPOINT" || -z "$BACKUP_S3_ACCESS_KEY_ID" || -z "$BACKUP_S3_SECRET_ACCESS_KEY" ]]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Automated backups are not active. Configure the five WYRMORA backup repository secrets."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install PostgreSQL and S3 tools
+        if: steps.config.outputs.ready == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client awscli
+
+      - name: Create and upload database backup
+        if: steps.config.outputs.ready == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.WYRMORA_DATABASE_URL }}
+          BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+          BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          backup_file="$(mktemp /tmp/wyrmora-db-XXXXXX.dump)"
+          trap 'rm -f "$backup_file"' EXIT
+          pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --file="$backup_file"
+          test -s "$backup_file"
+          sha256sum "$backup_file"
+          PGPASSWORD=postgres pg_restore --host=127.0.0.1 --port=5432 --username=postgres --dbname=wyrmora_restore_test --no-owner --no-acl --exit-on-error "$backup_file"
+          backup_name="wyrmora-db-$(date -u +%Y%m%dT%H%M%SZ).dump"
+          aws s3 cp "$backup_file" "s3://$BACKUP_S3_BUCKET/database-backups/$backup_name" --endpoint-url "$BACKUP_S3_ENDPOINT" --only-show-errors
+          echo "Backup uploaded: database-backups/$backup_name"

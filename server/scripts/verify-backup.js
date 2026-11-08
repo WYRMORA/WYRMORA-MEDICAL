@@ -18,10 +18,11 @@ try{
   await admin.connect();
   await admin.query(`CREATE DATABASE "${database}"`);created=true;
   const args=['--host',host,'--port',port,'--username',username,'--dbname',database,'--no-owner','--no-acl','--exit-on-error',file];
-  const child=spawn('pg_restore',args,{env:{...process.env,PGPASSWORD:password},stdio:'inherit'});
+  const child=spawn('pg_restore',args,{env:{...process.env,PGPASSWORD:password,...(parsed.searchParams.get('sslmode')?{PGSSLMODE:parsed.searchParams.get('sslmode')}:{})},stdio:'inherit'});
   const code=await new Promise((resolve,reject)=>{child.on('error',reject);child.on('close',resolve);});
   if(code!==0)throw new Error(`pg_restore failed with exit code ${code}`);
-  const restored=new pg.Client({connectionString:new URL(`postgresql://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:${port}/${database}`).toString()});
+  const restoredUrl=new URL(config.databaseUrl);restoredUrl.pathname=`/${database}`;
+  const restored=new pg.Client({connectionString:restoredUrl.toString()});
   await restored.connect();
   try{
     const result=await restored.query("SELECT COUNT(*)::int AS tables FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'");

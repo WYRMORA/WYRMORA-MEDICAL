@@ -30,7 +30,8 @@ export async function sendAccountEmail({ to, subject, html, text }) {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ from, to: [to], subject, html, text })
+    body: JSON.stringify({ from, to: [to], subject, html, text }),
+    signal: AbortSignal.timeout(15000)
   });
   if (!response.ok) {
     // Do not expose provider response bodies or credentials to API clients/logs.

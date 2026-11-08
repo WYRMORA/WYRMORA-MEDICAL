@@ -173,6 +173,16 @@ router.patch('/sellers/:id/verification', async (req,res,next) => {
   try {
     const status=String(req.body?.status||'');
     if(!['pending','verified','rejected'].includes(status)) return res.status(400).json({error:'Invalid seller verification status.'});
+    if(status==='verified'){
+      const credential=await pool.query(
+        `SELECT a.id FROM sellers s
+         JOIN private_assets a ON a.id=s.credential_asset_id AND a.owner_user_id=s.user_id
+           AND a.status='uploaded' AND a.purpose='seller_credential'
+         WHERE s.id=$1`,
+        [req.params.id]
+      );
+      if(!credential.rowCount)return res.status(409).json({error:'Verified private business/pharmacy credential upload is required before seller approval.'});
+    }
     const result=await pool.query(
       'UPDATE sellers SET verification_status=$1 WHERE id=$2 RETURNING id,user_id,business_name,verification_status',
       [status,req.params.id]
@@ -201,6 +211,21 @@ router.post('/test-products', async (req,res,next) => {
     await audit(req.user.id,'test_product_created','product',result.rows[0].id,{isTest:true,price:1,stock:5});
     res.status(201).json({product:result.rows[0],message:'TEST ONLY product created. It cannot accept payment or fulfillment.'});
   } catch(e){next(e);}
+});
+
+router.get('/refunds', async (req,res,next) => {
+  try {
+    const result=await pool.query(
+      `SELECT p.id,p.order_id,p.provider,p.amount_paisa,p.provider_status,p.provider_transaction_id,p.created_at,p.updated_at,
+              o.order_number,o.payment_status,u.name AS buyer_name,u.email AS buyer_email
+       FROM payment_transactions p
+       JOIN orders o ON o.id=p.order_id
+       JOIN users u ON u.id=p.user_id
+       WHERE p.status='refund_requested'
+       ORDER BY p.updated_at ASC LIMIT 300`
+    );
+    res.json({refunds:result.rows});
+  }catch(e){next(e);}
 });
 
 router.get('/orders', async (req,res,next) => {
@@ -485,10 +510,45 @@ router.get('/pharmacists/accounts', async (req,res,next) => {
   } catch (e) { next(e); }
 });
 
+router.patch('/pharmacists/accounts/:id/credential', async (req,res,next) => {
+  try {
+    const checkedAgainst=String(req.body?.checkedAgainst||'').trim();
+    const notes=String(req.body?.notes||'').trim();
+    if(checkedAgainst.length<5||checkedAgainst.length>300||notes.length>1000)
+      return res.status(400).json({error:'Official issuing authority/register and review note are required.'});
+    const credential=await pool.query(
+      `SELECT a.id FROM pharmacist_profiles p
+       JOIN private_assets a ON a.id=p.credential_asset_id AND a.owner_user_id=p.user_id
+         AND a.status='uploaded' AND a.purpose='pharmacist_credential'
+       WHERE p.user_id=$1`,
+      [req.params.id]
+    );
+    if(!credential.rowCount)return res.status(409).json({error:'Uploaded pharmacist credential document is required before verification.'});
+    const result=await pool.query(
+      `UPDATE pharmacist_profiles SET is_credential_active=true,credential_verified_by=$1,
+       credential_verified_at=NOW() WHERE user_id=$2 RETURNING user_id,is_credential_active,credential_verified_at`,
+      [req.user.id,req.params.id]
+    );
+    if(!result.rowCount)return res.status(404).json({error:'Pharmacist profile not found.'});
+    await audit(req.user.id,'pharmacist_private_credential_verified','pharmacist',req.params.id,{checkedAgainst,notes,assetId:credential.rows[0].id});
+    res.json({pharmacist:result.rows[0],message:'Credential review recorded and pharmacist access activated.'});
+  }catch(e){next(e);}
+});
+
 router.patch('/pharmacists/accounts/:id/status', async (req,res,next) => {
   try {
     const active = req.body?.active;
     if (typeof active !== 'boolean') return res.status(400).json({ error: 'active true वा false हुनुपर्छ।' });
+    if(active){
+      const verified=await pool.query(
+        `SELECT p.user_id FROM pharmacist_profiles p
+         JOIN private_assets a ON a.id=p.credential_asset_id AND a.owner_user_id=p.user_id
+           AND a.status='uploaded' AND a.purpose='pharmacist_credential'
+         WHERE p.user_id=$1 AND p.credential_verified_at IS NOT NULL`,
+        [req.params.id]
+      );
+      if(!verified.rowCount)return res.status(409).json({error:'A current uploaded credential must be reviewed by Super Admin before reactivation.'});
+    }
     const result = await pool.query(
       `UPDATE users u SET is_active=$1,updated_at=NOW()
        FROM pharmacist_profiles p

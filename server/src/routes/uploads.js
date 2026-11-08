@@ -30,13 +30,13 @@ router.post('/presign', async (req,res,next) => {
     const originalName = safeName(req.body?.fileName);
     const ext = path.extname(originalName).toLowerCase().slice(0,10);
     const key = `private/${purpose}/${req.user.id}/${id}${ext}`;
+    const uploadUrl = await createUploadUrl({ key, contentType, sizeBytes });
     const result = await pool.query(
       `INSERT INTO private_assets(id,owner_user_id,purpose,object_key,original_name,content_type,size_bytes)
        VALUES($1,$2,$3,$4,$5,$6,$7)
        RETURNING id,purpose,original_name,content_type,size_bytes,status,created_at`,
       [id,req.user.id,purpose,key,originalName,contentType,sizeBytes]
     );
-    const uploadUrl = await createUploadUrl({ key, contentType, sizeBytes });
     res.status(201).json({ asset: result.rows[0], uploadUrl, method: 'PUT', expiresInSeconds: 300 });
   } catch (e) { next(e); }
 });
@@ -46,6 +46,7 @@ router.post('/:id/complete', async (req,res,next) => {
     const asset = await pool.query('SELECT id,object_key,content_type,size_bytes,status FROM private_assets WHERE id=$1 AND owner_user_id=$2',[req.params.id,req.user.id]);
     if (!asset.rowCount) return res.status(404).json({ error: 'Upload record not found.' });
     if (asset.rows[0].status === 'uploaded') return res.json({ message: 'Upload already confirmed.' });
+    if (asset.rows[0].status === 'rejected') return res.status(409).json({ error: 'This upload was rejected and cannot be reused.' });
     const actual = await inspectUploadedObject(asset.rows[0].object_key);
     if (actual.sizeBytes !== Number(asset.rows[0].size_bytes) || actual.contentType !== asset.rows[0].content_type || actual.detectedContentType !== asset.rows[0].content_type) {
       await pool.query("UPDATE private_assets SET status='rejected' WHERE id=$1",[req.params.id]);
@@ -83,7 +84,7 @@ router.post('/:id/attach', async (req,res,next) => {
     }
     if(purpose==='pharmacist_credential' && req.user.role==='pharmacist'){
       const attached=await pool.query(
-        "UPDATE pharmacist_profiles SET credential_asset_id=$1,is_credential_active=false WHERE user_id=$2 RETURNING user_id",
+        "UPDATE pharmacist_profiles SET credential_asset_id=$1,is_credential_active=false,credential_verified_at=NULL,credential_verified_by=NULL WHERE user_id=$2 RETURNING user_id",
         [req.params.id,req.user.id]
       );
       if(!attached.rowCount)return res.status(404).json({error:'Pharmacist profile not found.'});
