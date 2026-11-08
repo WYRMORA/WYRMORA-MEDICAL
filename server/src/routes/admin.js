@@ -273,6 +273,10 @@ router.patch('/orders/:id/status', async (req,res,next) => {
       await client.query('ROLLBACK'); transactionOpen = false;
       return res.status(409).json({error:'TEST ONLY orders cannot be shipped or marked delivered.'});
     }
+    if (['processing','shipped','delivered'].includes(status) && previous.payment_status !== 'paid') {
+      await client.query('ROLLBACK'); transactionOpen = false;
+      return res.status(409).json({error:'An order cannot be processed or fulfilled until payment is independently confirmed.'});
+    }
     if (status === 'cancelled' && previous.payment_status === 'paid') {
       await client.query('ROLLBACK'); transactionOpen = false;
       return res.status(409).json({error:'Paid order cannot be cancelled here. Complete the verified refund workflow first.'});
