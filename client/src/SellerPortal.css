@@ -1,0 +1,27 @@
+.seller-portal { margin: 22px 0; }
+.seller-actions { display:flex; gap:8px; align-items:center; }
+.seller-auth { max-width:720px; margin:18px auto; padding:18px; border:1px solid var(--line,#d8dee8); border-radius:14px; }
+.seller-auth form { display:grid; gap:14px; }
+.seller-auth label { display:grid; gap:6px; font-weight:600; }
+.seller-auth input,.seller-auth textarea,.seller-auth select { width:100%; padding:11px 12px; border:1px solid var(--line,#cbd5e1); border-radius:8px; font:inherit; background:var(--surface,#fff); color:inherit; }
+.seller-auth small,.seller-auth p,.seller-note { color:var(--muted,#64748b); line-height:1.6; }
+.seller-note { padding:12px 14px; border-radius:10px; background:var(--soft,#f1f5f9); }
+.seller-workspace { display:grid; gap:16px; }
+.seller-profile { display:flex; justify-content:space-between; gap:16px; padding:18px; border:1px solid var(--line,#d8dee8); border-radius:12px; }
+.seller-profile > div { display:grid; gap:5px; }
+.seller-profile small { color:var(--muted,#64748b); font-size:11px; letter-spacing:.08em; }
+.seller-profile span { color:var(--muted,#64748b); }
+.seller-status { min-width:130px; text-align:right; }
+.seller-status strong,.seller-row > span { text-transform:capitalize; }
+.seller-fields { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.seller-list { display:grid; gap:10px; }
+.seller-row { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:14px; border:1px solid var(--line,#d8dee8); border-radius:10px; }
+.seller-row > div { display:grid; gap:5px; }
+.seller-row small { color:var(--muted,#64748b); }
+.seller-row > span { font-size:13px; font-weight:700; }
+.seller-portal .is-verified { color:#15803d; }
+@media (max-width:640px) {
+  .seller-profile,.seller-row { align-items:flex-start; flex-direction:column; }
+  .seller-status { text-align:left; }
+  .seller-fields { grid-template-columns:1fr; }
+}

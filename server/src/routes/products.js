@@ -3,6 +3,15 @@ import { pool } from '../db.js';
 import { config } from '../config.js';
 const router = Router();
 
+router.get('/categories', async (req,res,next) => {
+  try {
+    const result = await pool.query(
+      'SELECT id,name,slug FROM categories WHERE is_active=true ORDER BY name'
+    );
+    res.json({ categories: result.rows });
+  } catch (err) { next(err); }
+});
+
 router.get('/', async (req, res, next) => {
   try {
     const q = String(req.query.q || '').trim().slice(0, 100);
