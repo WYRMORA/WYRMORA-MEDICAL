@@ -296,3 +296,37 @@ test('readiness endpoint returns 503 without exposing database errors', async ()
     pool.query = originalQuery;
   }
 });
+
+
+test('super-admin bootstrap rejects a missing or incorrect bootstrap token before database access', async () => {
+  const originalToken = process.env.ADMIN_BOOTSTRAP_TOKEN;
+  process.env.ADMIN_BOOTSTRAP_TOKEN = 'configured-bootstrap-token-for-test';
+  try {
+    const app = createApp();
+    const missing = await request(app).post('/api/auth/bootstrap-super-admin')
+      .set('Origin', config.clientOrigins[0])
+      .send({ name: 'Test Admin', email: 'admin@example.com', password: 'StrongPass123!' });
+    const incorrect = await request(app).post('/api/auth/bootstrap-super-admin')
+      .set('Origin', config.clientOrigins[0])
+      .set('x-bootstrap-token', 'incorrect-token')
+      .send({ name: 'Test Admin', email: 'admin@example.com', password: 'StrongPass123!' });
+
+    assert.equal(missing.status, 403);
+    assert.equal(incorrect.status, 403);
+    assert.deepEqual(missing.body, { error: 'Bootstrap is not available.' });
+    assert.deepEqual(incorrect.body, { error: 'Bootstrap is not available.' });
+  } finally {
+    if (originalToken === undefined) delete process.env.ADMIN_BOOTSTRAP_TOKEN;
+    else process.env.ADMIN_BOOTSTRAP_TOKEN = originalToken;
+  }
+});
+
+test('logout clears the session cookie without requiring a valid session', async () => {
+  const response = await request(createApp()).post('/api/auth/logout')
+    .set('Origin', config.clientOrigins[0]);
+
+  assert.equal(response.status, 204);
+  const cookie = response.headers['set-cookie']?.find(value => value.startsWith(`${config.cookieName}=`));
+  assert.ok(cookie, 'logout should send a cookie-clearing header');
+  assert.match(cookie, /Expires=Thu, 01 Jan 1970|Max-Age=0/i);
+});
