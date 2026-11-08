@@ -174,6 +174,11 @@ router.post('/', requireAuth, allowRoles('super_admin','editor'), adminWriteLimi
           WHEN EXCLUDED.price_npr IS NULL THEN NULL
           ELSE NOW()
         END,
+        verification_status = 'pending',
+        verified_by = NULL,
+        pharmacist_registration = NULL,
+        verified_at = NULL,
+        verification_notes = NULL,
         updated_at = NOW()
       RETURNING *`,
       [
