@@ -25,3 +25,15 @@ Create a private bucket with public access blocked, TLS enforced, and server-sid
 Product images allow JPEG/PNG/WebP up to 5 MiB. Credential documents allow PDF/JPEG/PNG up to 10 MiB. The API stores only metadata and generated object keys, not public URLs.
 
 After upload confirmation, call POST /api/uploads/:id/attach. For product images, include productId; the product must belong to the authenticated seller. The API attaches the image to the product and approved product images are served through short-lived private URLs. Seller credential documents are attached to the seller profile and return the seller to pending verification. Pharmacist credential documents are attached to the pharmacist profile and pause clinical access until a Super Admin re-verifies the credential. The Super Admin review lists expose the document asset ID; download it through the owner/admin-only endpoint. The actual authority check remains a human legal/credential review. Provider credentials and private-bucket policy still require deployment configuration and verification.
+
+
+## Credential approval rules
+
+- Approving a pharmacist application creates a **provisional account only**. It does not verify the pharmacist's registration and does not grant clinical access.
+- The pharmacist must sign in, upload a private credential document, and have a Super Admin independently check it against the issuing authority or official register.
+- Only the separate credential-verification action activates clinical access. The action records the reviewed asset ID, authority/register, reviewer, timestamp, and notes in the audit log.
+- Re-uploading a pharmacist credential pauses clinical access and clears the previous verification until the new file is reviewed.
+- Migration `016_suspend_unsubstantiated_pharmacist_credentials.sql` suspends older pharmacist profiles that have no uploaded credential asset. They must upload current evidence and be re-reviewed.
+- Seller approval likewise requires an uploaded private business/pharmacy credential, plus an Admin-entered official source and review note recorded in the audit log.
+
+An uploaded document is not proof of authenticity by itself. WYRMORA administrators must independently validate the document and the relevant business/pharmacy authorization with the issuing authority before enabling marketplace or clinical privileges.
