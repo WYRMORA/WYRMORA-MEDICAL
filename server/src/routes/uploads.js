@@ -47,7 +47,7 @@ router.post('/:id/complete', async (req,res,next) => {
     if (!asset.rowCount) return res.status(404).json({ error: 'Upload record not found.' });
     if (asset.rows[0].status === 'uploaded') return res.json({ message: 'Upload already confirmed.' });
     const actual = await inspectUploadedObject(asset.rows[0].object_key);
-    if (actual.sizeBytes !== Number(asset.rows[0].size_bytes) || actual.contentType !== asset.rows[0].content_type) {
+    if (actual.sizeBytes !== Number(asset.rows[0].size_bytes) || actual.contentType !== asset.rows[0].content_type || actual.detectedContentType !== asset.rows[0].content_type) {
       await pool.query("UPDATE private_assets SET status='rejected' WHERE id=$1",[req.params.id]);
       return res.status(400).json({ error: 'Uploaded file metadata does not match the signed request.' });
     }
