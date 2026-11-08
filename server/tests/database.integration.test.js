@@ -32,6 +32,7 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
   let userId;
   let adminId;
   const pharmacistEmail = `pharmacist-${randomUUID()}@example.test`;
+  const pharmacistRegistration = `NPC-${randomUUID()}`;
 
   try {
     const registration = await request(app)
@@ -81,7 +82,7 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
     const application = await pool.query(
       `INSERT INTO pharmacist_applications(full_name,email,password_hash,qualification,registration_number,issuing_authority)
        VALUES($1,$2,$3,$4,$5,$6) RETURNING id`,
-      ['Integration Pharmacist',pharmacistEmail,'temporary-test-hash','B.Pharm',`NPC-${randomUUID()}`,'Nepal Pharmacy Council']
+      ['Integration Pharmacist',pharmacistEmail,'temporary-test-hash','B.Pharm',pharmacistRegistration,'Nepal Pharmacy Council']
     );
     const adminToken = jwt.sign(
       { email: adminEmail }, config.jwtSecret,
@@ -106,7 +107,7 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
         email:pharmacistEmail,
         password:'StrongPass123!',
         qualification:'B.Pharm',
-        registrationNumber:`NPC-${randomUUID()}`,
+        registrationNumber:pharmacistRegistration,
         issuingAuthority:'Nepal Pharmacy Council'
       });
     assert.equal(reapplication.status,201);
