@@ -7,7 +7,7 @@ services:
     region: singapore
     buildCommand: npm install --prefix server && npm run migrate --prefix server
     startCommand: npm start --prefix server
-    healthCheckPath: /api/health
+    healthCheckPath: /api/health/ready
     autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
