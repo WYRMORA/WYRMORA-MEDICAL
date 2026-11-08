@@ -19,7 +19,7 @@ router.post('/profile', allowRoles('customer','seller'), async (req, res, next) 
   try {
     const businessName = String(req.body?.businessName || '').trim();
     const description = String(req.body?.description || '').trim();
-    if (businessName.length < 2 || businessName.length > 120) return res.status(400).json({ error: 'Business name must be 2–120 characters.' });
+    if (businessName.length < 2 || businessName.length > 120 || description.length > 2000) return res.status(400).json({ error: 'Business name must be 2–120 characters and description must be at most 2000 characters.' });
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
