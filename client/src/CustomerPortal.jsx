@@ -33,6 +33,7 @@ export default function CustomerPortal({ onClose }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [products, setProducts] = useState([]);
+  const [commerceEnabled, setCommerceEnabled] = useState(false);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
   const [address, setAddress] = useState('');
@@ -44,6 +45,7 @@ export default function CustomerPortal({ onClose }) {
   async function loadProducts() {
     const data = await request('/api/products');
     setProducts(data.products || []);
+    setCommerceEnabled(data.commerceEnabled === true);
   }
   async function loadCustomerData() {
     const [cartData, orderData] = await Promise.all([
@@ -61,11 +63,15 @@ export default function CustomerPortal({ onClose }) {
         if (!active) return;
         setUser(session.user);
         setProducts(catalog.products || []);
+        setCommerceEnabled(catalog.commerceEnabled === true);
       })
       .catch(async () => {
         try {
           const catalog = await request('/api/products');
-          if (active) setProducts(catalog.products || []);
+          if (active) {
+            setProducts(catalog.products || []);
+            setCommerceEnabled(catalog.commerceEnabled === true);
+          }
         } catch (e) { if (active) setError(e.message); }
       })
       .finally(() => { if (active) setLoading(false); });
@@ -164,16 +170,16 @@ export default function CustomerPortal({ onClose }) {
     </div> : <>
       <div className="customer-userbar"><span>Welcome, <strong>{user.name}</strong> · {user.email}</span><button onClick={logout}>Logout</button></div>
       <nav className="customer-tabs">
-        {['shop','cart','orders'].map(t => <button key={t} className={view === t ? 'active' : ''} onClick={() => setView(t)}>
+        {['shop', ...(commerceEnabled ? ['cart'] : []), 'orders'].map(t => <button key={t} className={view === t ? 'active' : ''} onClick={() => setView(t)}>
           {{shop:'Partner Products',cart:`Cart (${cart.length})`,orders:'My Orders'}[t]}
         </button>)}
       </nav>
 
       {view === 'shop' && <div className="customer-products">
-        <p className="customer-note">यहाँ Super Admin बाट approved भएका partner products मात्र देखिन्छन्। Medicine purchase / pharmacy fulfillment हाल सक्रिय छैन।</p>
+        <p className="customer-note">यहाँ Super Admin बाट approved भएका partner products मात्र देखिन्छन्। {commerceEnabled ? 'Checkout उपलब्ध छ।' : 'Checkout हाल बन्द छ; आवश्यक legal, pharmacy र payment approvals पूरा भएपछि मात्र खुल्नेछ।'}</p>
         {products.length ? products.map(product => <article className="customer-product" key={product.id}>
           <div><strong>{product.name} {product.is_test&&<span className="admin-tag">TEST ONLY · NO SALE</span>}</strong><p>{product.description}</p><small>{product.category} · Seller: {product.seller_name}</small></div>
-          <div className="customer-product-action"><strong>{money(product.price)}</strong><small>{product.stock} उपलब्ध</small><button disabled={product.stock < 1} onClick={() => addToCart(product)}>Add to cart</button></div>
+          <div className="customer-product-action"><strong>{money(product.price)}</strong><small>{product.stock} उपलब्ध</small>{commerceEnabled && <button disabled={product.stock < 1} onClick={() => addToCart(product)}>Add to cart</button>}</div>
         </article>) : <div className="empty"><h3>अहिले कुनै approved product छैन</h3><p>Partner product approve भएपछि यहाँ देखिनेछ।</p></div>}
       </div>}
 
@@ -200,7 +206,7 @@ export default function CustomerPortal({ onClose }) {
         </article>)}
         {!orders.length && <p>अहिलेसम्म कुनै order छैन।</p>}
       </div>}
-      <div className="customer-safety"><strong>महत्त्वपूर्ण:</strong> यो प्रारम्भिक test order workflow हो। यसले payment लिँदैन। WYRMORA मा औषधि बिक्री, prescription validation, pharmacy fulfillment र delivery सेवा आवश्यक कानुनी/व्यावसायिक स्वीकृति नआएसम्म सक्रिय छैनन्।</div>
+      <div className="customer-safety"><strong>महत्त्वपूर्ण:</strong> {commerceEnabled ? 'Marketplace checkout enabled by operator configuration. Medicine sales, prescription validation, pharmacy fulfillment and delivery still require their own legal approvals and verified partner workflows.' : 'हाल product catalogue मात्र हेर्न मिल्छ; cart, checkout र order placement बन्द छन्। WYRMORA मा औषधि बिक्री, prescription validation, pharmacy fulfillment र delivery सेवा आवश्यक कानुनी/व्यावसायिक स्वीकृति नआएसम्म सक्रिय हुँदैनन्।'}</div>
     </>}
   </section>;
 }

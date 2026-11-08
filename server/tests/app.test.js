@@ -178,6 +178,8 @@ test('demo seed script refuses to run in production mode', () => {
 test('transaction routes forward database connection failures to the JSON error handler', async () => {
   const originalQuery = pool.query;
   const originalConnect = pool.connect;
+  const originalMarketplaceFlag = config.enableMarketplaceOrders;
+  config.enableMarketplaceOrders = true;
   pool.query = async () => ({
     rows: [{ id: '42', name: 'Test User', email: 'test@example.com', role: 'customer', is_active: true }],
     rowCount: 1
@@ -210,6 +212,7 @@ test('transaction routes forward database connection failures to the JSON error 
   } finally {
     pool.query = originalQuery;
     pool.connect = originalConnect;
+    config.enableMarketplaceOrders = originalMarketplaceFlag;
   }
 });
 
@@ -221,4 +224,35 @@ test('support ticket rate limit allows five submissions and blocks the sixth per
   const responses = [];
   for (let i = 0; i < 6; i++) responses.push(await request(app).post('/support'));
   assert.deepEqual(responses.map(response => response.status), [204,204,204,204,204,429]);
+});
+
+test('marketplace checkout is disabled by default while customer read-only access remains available', async () => {
+  assert.equal(config.enableMarketplaceOrders, false);
+  const originalQuery = pool.query;
+  pool.query = async () => ({
+    rows: [{ id: '42', name: 'Test User', email: 'test@example.com', role: 'customer', is_active: true }],
+    rowCount: 1
+  });
+  try {
+    const token = jwt.sign(
+      { email: 'test@example.com' }, config.jwtSecret,
+      { subject: '42', issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
+    );
+    const app = createApp();
+    const cookie = `${config.cookieName}=${token}`;
+    const cartRead = await request(app).get('/api/cart').set('Cookie', cookie);
+    const cartWrite = await request(app).post('/api/cart/items')
+      .set('Cookie', cookie).set('Origin', config.clientOrigins[0]).send({ productId: 1, quantity: 1 });
+    const orderHistory = await request(app).get('/api/orders/mine').set('Cookie', cookie);
+    const checkout = await request(app).post('/api/orders')
+      .set('Cookie', cookie).set('Origin', config.clientOrigins[0])
+      .send({ shippingAddress: '123 Main Street, Kathmandu' });
+    assert.equal(cartRead.status, 200);
+    assert.equal(cartWrite.status, 403);
+    assert.equal(orderHistory.status, 200);
+    assert.equal(checkout.status, 403);
+    assert.match(checkout.body.error, /checkout is disabled/i);
+  } finally {
+    pool.query = originalQuery;
+  }
 });

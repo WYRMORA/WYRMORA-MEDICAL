@@ -20,5 +20,7 @@ export const config = {
   cookieName: process.env.COOKIE_NAME || 'wyrmora_session',
   cookieSecure: process.env.COOKIE_SECURE === 'true' || (process.env.COOKIE_SECURE !== 'false' && process.env.NODE_ENV === 'production'),
   nodeEnv: process.env.NODE_ENV || 'development',
-  enableTestOrderWorkflow: process.env.ENABLE_TEST_ORDER_WORKFLOW === 'true'
+  enableTestOrderWorkflow: process.env.ENABLE_TEST_ORDER_WORKFLOW === 'true',
+  // Commercial marketplace checkout is opt-in only after legal, pharmacy and payment approvals.
+  enableMarketplaceOrders: process.env.ENABLE_MARKETPLACE_ORDERS === 'true'
 };
