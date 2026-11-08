@@ -361,3 +361,20 @@ test('checkout detects unavailable cart rows before creating an order', async ()
     config.enableMarketplaceOrders = originalFlag;
   }
 });
+
+
+test('customer cart returns unavailable rows so they can be removed before checkout', async () => {
+  const originalQuery = pool.query;
+  pool.query = async sql => {
+    if (sql.includes('FROM users WHERE id=$1')) return { rows: [{ id: '42', name: 'Test', email: 'test@example.com', role: 'customer', is_active: true }], rowCount: 1 };
+    if (sql.includes('FROM cart_items ci JOIN products')) return { rows: [{ product_id: 8, quantity: 1, name: 'Suspended product', price: '50.00', stock: 0, is_test: false, available: false }], rowCount: 1 };
+    throw new Error('Unexpected SQL in cart test');
+  };
+  try {
+    const token = jwt.sign({ email: 'test@example.com' }, config.jwtSecret, { subject: '42', issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' });
+    const response = await request(createApp()).get('/api/cart').set('Cookie', config.cookieName + '=' + token);
+    assert.equal(response.status, 200);
+    assert.equal(response.body.items.length, 1);
+    assert.equal(response.body.items[0].available, false);
+  } finally { pool.query = originalQuery; }
+});
