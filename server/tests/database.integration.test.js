@@ -92,7 +92,8 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
       .set('Origin',config.clientOrigins[0])
       .send({businessName:'Integration Pharmacy Store',description:'Integration test seller profile'});
     assert.equal(sellerProfile.status,201);
-    await pool.query("UPDATE sellers SET verification_status='verified' WHERE user_id=$1",[userId]);
+    const sellerRow=await pool.query('SELECT id FROM sellers WHERE user_id=$1',[userId]);
+    const sellerId=sellerRow.rows[0].id;
     const listing = await request(app)
       .post('/api/seller/products')
       .set('Cookie',cookie)
@@ -118,7 +119,7 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
     );
     const adminCookie = `${config.cookieName}=${adminToken}`;
     const sellerApprovalWithoutCredential=await request(app)
-      .patch(`/api/admin/sellers/${sellerProfile.body.profile.id}/verification`)
+      .patch(`/api/admin/sellers/${sellerId}/verification`)
       .set('Cookie',adminCookie)
       .set('Origin',config.clientOrigins[0])
       .send({status:'verified',checkedAgainst:'Official register',notes:'Checked'});
@@ -131,7 +132,7 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
     );
     await pool.query('UPDATE sellers SET credential_asset_id=$1 WHERE user_id=$2',[sellerCredentialId,userId]);
     const sellerApproval=await request(app)
-      .patch(`/api/admin/sellers/${sellerProfile.body.profile.id}/verification`)
+      .patch(`/api/admin/sellers/${sellerId}/verification`)
       .set('Cookie',adminCookie)
       .set('Origin',config.clientOrigins[0])
       .send({status:'verified',checkedAgainst:'Official issuing authority register',notes:'Business identity and license checked.'});
@@ -139,7 +140,7 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
     assert.equal(sellerApproval.body.seller.verification_status,'verified');
     const sellerAudit=await pool.query(
       `SELECT metadata FROM audit_logs WHERE actor_id=$1 AND action='seller_verification_updated' AND entity_id=$2 ORDER BY created_at DESC LIMIT 1`,
-      [adminId,String(sellerProfile.body.profile.id)]
+      [adminId,String(sellerId)]
     );
     assert.equal(sellerAudit.rowCount,1);
     assert.equal(sellerAudit.rows[0].metadata.assetId,sellerCredentialId);
