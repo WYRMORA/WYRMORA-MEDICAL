@@ -84,7 +84,7 @@ router.post('/:id/attach', async (req,res,next) => {
     }
     if(purpose==='pharmacist_credential' && req.user.role==='pharmacist'){
       const attached=await pool.query(
-        "UPDATE pharmacist_profiles SET credential_asset_id=$1,is_credential_active=false WHERE user_id=$2 RETURNING user_id",
+        "UPDATE pharmacist_profiles SET credential_asset_id=$1,is_credential_active=false,credential_verified_at=NULL,credential_verified_by=NULL WHERE user_id=$2 RETURNING user_id",
         [req.params.id,req.user.id]
       );
       if(!attached.rowCount)return res.status(404).json({error:'Pharmacist profile not found.'});
