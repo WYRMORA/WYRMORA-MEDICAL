@@ -13,6 +13,7 @@ import adminRoutes from './routes/admin.js';
 import reviewRoutes from './routes/reviews.js';
 import supportRoutes from './routes/support.js';
 import medicineRoutes from './routes/medicines.js';
+import pharmacistRoutes from './routes/pharmacist.js';
 import { originGuard, notFound, errorHandler } from './middleware/security.js';
 
 export function createApp() {
@@ -31,6 +32,7 @@ export function createApp() {
   app.get('/api/health', (req,res) => res.json({ status: 'ok', service: 'wyrmora-api' }));
   app.use('/api/auth', authLimiter, authRoutes);
   app.use('/api/medicines', medicineRoutes);
+  app.use('/api/pharmacist', pharmacistRoutes);
   app.use('/api/products', productRoutes);
   app.use('/api/cart', cartRoutes);
   app.use('/api/orders', orderRoutes);
