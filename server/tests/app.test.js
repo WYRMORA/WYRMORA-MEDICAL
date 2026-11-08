@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
+import express from 'express';
 import { createApp } from '../src/app.js';
 import { emailSchema } from '../src/lib/validation.js';
-import { applicationSchema, reviewSchema } from '../src/routes/pharmacist.js';
+import { applicationSchema, createApplicationLimit, reviewSchema } from '../src/routes/pharmacist.js';
 
 test('health endpoint reports API status', async () => {
   const app = createApp();
@@ -134,4 +135,22 @@ test('pharmacist application endpoint rejects invalid details before database ac
     });
   assert.equal(response.status,400);
   assert.match(response.body.error,/आवेदनका/);
+});
+
+
+test('pharmacist application rate limit allows three requests and blocks the fourth per IP', async () => {
+  // Isolated Express app and in-memory limiter: no real application route or database is used.
+  const app = express();
+  app.set('trust proxy', 1);
+  app.post('/applications', createApplicationLimit(), (_req, res) => res.sendStatus(204));
+
+  const first = await request(app).post('/applications');
+  const second = await request(app).post('/applications');
+  const third = await request(app).post('/applications');
+  const fourth = await request(app).post('/applications');
+
+  assert.equal(first.status, 204);
+  assert.equal(second.status, 204);
+  assert.equal(third.status, 204);
+  assert.equal(fourth.status, 429);
 });

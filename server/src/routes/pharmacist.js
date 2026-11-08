@@ -7,7 +7,10 @@ import { requireAuth, allowRoles } from '../middleware/auth.js';
 import { emailSchema, passwordSchema } from '../lib/validation.js';
 
 const router = Router();
-const applicationLimit = rateLimit({ windowMs: 60 * 60 * 1000, limit: 3, standardHeaders: 'draft-7', legacyHeaders: false });
+export function createApplicationLimit() {
+  return rateLimit({ windowMs: 60 * 60 * 1000, limit: 3, standardHeaders: 'draft-7', legacyHeaders: false });
+}
+const applicationLimit = createApplicationLimit();
 const reviewLimit = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false });
 
 export const applicationSchema = z.object({
