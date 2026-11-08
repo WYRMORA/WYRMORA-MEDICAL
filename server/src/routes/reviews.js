@@ -22,7 +22,7 @@ router.post('/products/:id/reviews', requireAuth, allowRoles('customer'), async 
       return res.status(400).json({error:'Rating must be 1–5 and comment must be under 2000 characters.'});
     const purchased=await pool.query(
       `SELECT 1 FROM order_items oi JOIN orders o ON o.id=oi.order_id
-       WHERE o.user_id=$1 AND oi.product_id=$2 AND o.order_status<>'cancelled' LIMIT 1`,
+       WHERE o.user_id=$1 AND oi.product_id=$2 AND o.order_status='delivered' AND o.payment_status='paid' LIMIT 1`,
       [req.user.id,req.params.id]
     );
     if(!purchased.rowCount) return res.status(403).json({error:'You can review a product only after ordering it.'});
