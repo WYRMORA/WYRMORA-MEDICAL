@@ -211,3 +211,29 @@ test('transaction routes forward database connection failures to the JSON error 
     pool.connect = originalConnect;
   }
 });
+
+test('marketplace cart and checkout remain disabled by default even for authenticated customers', async () => {
+  assert.equal(config.enableMarketplaceOrders, false);
+  const originalQuery = pool.query;
+  pool.query = async () => ({
+    rows: [{ id: '42', name: 'Test User', email: 'test@example.com', role: 'customer', is_active: true }],
+    rowCount: 1
+  });
+  try {
+    const token = jwt.sign(
+      { email: 'test@example.com' }, config.jwtSecret,
+      { subject: '42', issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
+    );
+    const app = createApp();
+    const cookie = `${config.cookieName}=${token}`;
+    const cart = await request(app).get('/api/cart').set('Cookie', cookie);
+    const checkout = await request(app).post('/api/orders')
+      .set('Cookie', cookie).set('Origin', config.clientOrigins[0])
+      .send({ shippingAddress: '123 Main Street, Kathmandu' });
+    assert.equal(cart.status, 403);
+    assert.equal(checkout.status, 403);
+    assert.match(checkout.body.error, /checkout is disabled/i);
+  } finally {
+    pool.query = originalQuery;
+  }
+});
