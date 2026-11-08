@@ -5,6 +5,16 @@ import { productSchema } from '../lib/validation.js';
 const router = Router();
 router.use(requireAuth);
 
+router.get('/profile', allowRoles('customer','seller'), async (req,res,next) => {
+  try {
+    const result = await pool.query(
+      'SELECT id,business_name,description,verification_status,created_at FROM sellers WHERE user_id=$1',
+      [req.user.id]
+    );
+    res.json({ profile: result.rows[0] || null });
+  } catch (e) { next(e); }
+});
+
 router.post('/profile', allowRoles('customer','seller'), async (req, res, next) => {
   try {
     const businessName = String(req.body?.businessName || '').trim();
