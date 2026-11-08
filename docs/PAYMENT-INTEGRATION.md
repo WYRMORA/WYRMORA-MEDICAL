@@ -20,7 +20,7 @@ Production API base: https://khalti.com/api/v2
 - POST /api/payments/:id/refund-request — customer asks for a refund.
 - PATCH /api/payments/:id/refund-confirm — Super Admin records the provider refund transaction ID after independently confirming the refund in the merchant dashboard.
 
-Khalti's documented web checkout flow requires lookup after callback; the callback's status alone is not authoritative. The current Khalti KPG-2 docs do not specify an automatic refund endpoint in this flow, so refunds are deliberately not claimed as automated: execute the refund through the merchant dashboard and then reconcile it using the admin endpoint. Repeated lookup callbacks are recorded idempotently in payment_events.
+The Customer Portal displays a Pay with Khalti action for eligible unpaid orders, redirects to the provider, and automatically submits pidx for server-side verification when the user returns to `/payment-result`. Khalti's documented web checkout flow requires lookup after callback; the callback's status alone is not authoritative. The current Khalti KPG-2 docs do not specify an automatic refund endpoint in this flow, so refunds are deliberately not claimed as automated: execute the refund through the merchant dashboard and then reconcile it using the admin endpoint. Repeated lookup callbacks are recorded idempotently in payment_events.
 
 ## Guardrails
 
