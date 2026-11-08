@@ -420,6 +420,20 @@ router.patch('/medicines/:id/publish-verification', async (req,res,next) => {
   try {
     client = await pool.connect();
     await client.query('BEGIN'); open = true;
+    // Serialize publishing with pharmacist reviews so a newer review cannot
+    // replace the approved review between selection and publication.
+    const medicine = await client.query(
+      'SELECT id,verification_status FROM medicines WHERE id=$1 FOR UPDATE',
+      [req.params.id]
+    );
+    if (!medicine.rowCount) {
+      await client.query('ROLLBACK'); open = false;
+      return res.status(404).json({ error: 'औषधि भेटिएन।' });
+    }
+    if (medicine.rows[0].verification_status === 'verified') {
+      await client.query('ROLLBACK'); open = false;
+      return res.status(409).json({ error: 'यो औषधि पहिले नै Verified छ।' });
+    }
     const review = await client.query(
       `SELECT r.id,r.recommendation,r.clinical_notes,r.pharmacist_id,p.registration_number
        FROM medicine_reviews r
