@@ -112,6 +112,11 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
       ['Integration Admin',adminEmail,'test-hash-not-used-for-login']
     );
     adminId = admin.rows[0].id;
+    const adminToken = jwt.sign(
+      { email: adminEmail }, config.jwtSecret,
+      { subject: String(adminId), issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
+    );
+    const adminCookie = `${config.cookieName}=${adminToken}`;
     const approvedListing = await request(app)
       .patch(`/api/admin/products/${sellerProductId}/approve`)
       .set('Cookie',adminCookie)
@@ -127,11 +132,6 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
        VALUES($1,$2,$3,$4,$5,$6) RETURNING id`,
       ['Integration Pharmacist',pharmacistEmail,'temporary-test-hash','B.Pharm',pharmacistRegistration,'Nepal Pharmacy Council']
     );
-    const adminToken = jwt.sign(
-      { email: adminEmail }, config.jwtSecret,
-      { subject: String(adminId), issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
-    );
-    const adminCookie = `${config.cookieName}=${adminToken}`;
     const rejection = await request(app)
       .patch(`/api/admin/pharmacists/applications/${application.rows[0].id}`)
       .set('Cookie', adminCookie)
