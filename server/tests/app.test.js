@@ -225,7 +225,7 @@ test('support ticket rate limit allows five submissions and blocks the sixth per
   assert.deepEqual(responses.map(response => response.status), [204,204,204,204,204,429]);
 });
 
-test('marketplace cart and checkout remain disabled by default even for authenticated customers', async () => {
+test('marketplace checkout is disabled by default while customer read-only access remains available', async () => {
   assert.equal(config.enableMarketplaceOrders, false);
   const originalQuery = pool.query;
   pool.query = async () => ({
@@ -239,11 +239,16 @@ test('marketplace cart and checkout remain disabled by default even for authenti
     );
     const app = createApp();
     const cookie = `${config.cookieName}=${token}`;
-    const cart = await request(app).get('/api/cart').set('Cookie', cookie);
+    const cartRead = await request(app).get('/api/cart').set('Cookie', cookie);
+    const cartWrite = await request(app).post('/api/cart/items')
+      .set('Cookie', cookie).set('Origin', config.clientOrigins[0]).send({ productId: 1, quantity: 1 });
+    const orderHistory = await request(app).get('/api/orders/mine').set('Cookie', cookie);
     const checkout = await request(app).post('/api/orders')
       .set('Cookie', cookie).set('Origin', config.clientOrigins[0])
       .send({ shippingAddress: '123 Main Street, Kathmandu' });
-    assert.equal(cart.status, 403);
+    assert.equal(cartRead.status, 200);
+    assert.equal(cartWrite.status, 403);
+    assert.equal(orderHistory.status, 200);
     assert.equal(checkout.status, 403);
     assert.match(checkout.body.error, /checkout is disabled/i);
   } finally {
