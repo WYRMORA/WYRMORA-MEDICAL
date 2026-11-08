@@ -22,4 +22,6 @@ jobs:
         with:
           node-version: 20
       - run: npm install --prefix server
+      - name: Report dependency vulnerabilities (diagnostic only)
+        run: npm audit --prefix server --json || true
       - run: npm test --prefix server
