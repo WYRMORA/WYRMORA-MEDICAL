@@ -70,7 +70,7 @@ export default function App() {
   const [tab, setTab] = useState('home');
 
   const [showAdmin, setShowAdmin] = useState(false);
-  const [showCustomer, setShowCustomer] = useState(false);
+  const [showCustomer, setShowCustomer] = useState(() => ['/verify-email', '/reset-password'].includes(window.location.pathname));
   const [showPharmacist, setShowPharmacist] = useState(false);
   const [showSeller, setShowSeller] = useState(false);
   const [notice, setNotice] = useState('');

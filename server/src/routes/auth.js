@@ -8,20 +8,20 @@ import { registerSchema } from '../lib/validation.js';
 import { requireAuth, cookieOptions } from '../middleware/auth.js';
 const router = Router();
 function setSession(res,user) {
- const token=jwt.sign({email:user.email},config.jwtSecret,{subject:String(user.id),issuer:'wyrmora-api',audience:'wyrmora-client',expiresIn:'8h'});
+ const token=jwt.sign({email:user.email,sessionVersion:user.session_version ?? 0},config.jwtSecret,{subject:String(user.id),issuer:'wyrmora-api',audience:'wyrmora-client',expiresIn:'8h'});
  res.cookie(config.cookieName,token,cookieOptions());
 }
 router.post('/register',async(req,res,next)=>{try{
  const parsed=registerSchema.safeParse(req.body);
  if(!parsed.success)return res.status(400).json({error:'Invalid registration details.',details:parsed.error.flatten()});
  const {name,email,password}=parsed.data,hash=await bcrypt.hash(password,12);
- const result=await pool.query("INSERT INTO users(name,email,password_hash,role) VALUES($1,$2,$3,'customer') RETURNING id,name,email,role",[name,email,hash]);
+ const result=await pool.query("INSERT INTO users(name,email,password_hash,role) VALUES($1,$2,$3,'customer') RETURNING id,name,email,role,session_version",[name,email,hash]);
  setSession(res,result.rows[0]);res.status(201).json({user:result.rows[0]});
 }catch(err){if(err.code==='23505')return res.status(409).json({error:'An account with this email already exists.'});next(err);}});
 router.post('/login',async(req,res,next)=>{try{
  const email=String(req.body?.email||'').trim().toLowerCase(),password=String(req.body?.password||'');
  if(!email||!password||email.length>254||password.length>72)return res.status(400).json({error:'Email and password are required.'});
- const result=await pool.query('SELECT id,name,email,role,password_hash FROM users WHERE email=$1 AND is_active=true',[email]),user=result.rows[0];
+ const result=await pool.query('SELECT id,name,email,role,password_hash,session_version FROM users WHERE email=$1 AND is_active=true',[email]),user=result.rows[0];
  if(!user||!(await bcrypt.compare(password,user.password_hash)))return res.status(401).json({error:'Email or password is incorrect.'});
  setSession(res,user);delete user.password_hash;res.json({user});
 }catch(err){next(err);}});
@@ -36,7 +36,7 @@ router.post('/bootstrap-super-admin',async(req,res,next)=>{
    await client.query('BEGIN');await client.query('LOCK TABLE users IN EXCLUSIVE MODE');
    const count=await client.query("SELECT COUNT(*)::int AS count FROM users WHERE role='super_admin'");
    if(count.rows[0].count>0){await client.query('ROLLBACK');return res.status(409).json({error:'A Super Admin already exists. Bootstrap is closed.'});}
-   const created=await client.query("INSERT INTO users(name,email,password_hash,role) VALUES($1,$2,$3,'super_admin') RETURNING id,name,email,role",[cleanName,cleanEmail,hash]);
+   const created=await client.query("INSERT INTO users(name,email,password_hash,role) VALUES($1,$2,$3,'super_admin') RETURNING id,name,email,role,session_version",[cleanName,cleanEmail,hash]);
    await client.query("INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata) VALUES($1,'super_admin_bootstrap','user',$2,$3)",[created.rows[0].id,String(created.rows[0].id),JSON.stringify({email:cleanEmail})]);
    await client.query('COMMIT');setSession(res,created.rows[0]);return res.status(201).json({user:created.rows[0]});
   }catch(error){await client.query('ROLLBACK').catch(()=>{});if(error.code==='23505')return res.status(409).json({error:'An account with this email already exists.'});throw error;}finally{client.release();}

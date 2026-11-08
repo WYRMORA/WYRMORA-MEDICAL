@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import { config } from './config.js';
 import { pool } from './db.js';
 import authRoutes from './routes/auth.js';
+import accountRecoveryRoutes from './routes/account-recovery.js';
 import productRoutes from './routes/products.js';
 import cartRoutes from './routes/cart.js';
 import orderRoutes from './routes/orders.js';
@@ -42,6 +43,7 @@ export function createApp() {
     }
   });
   app.use('/api/auth', authLimiter, authRoutes);
+  app.use('/api/account', authLimiter, accountRecoveryRoutes);
   app.use('/api/medicines', medicineRoutes);
   app.use('/api/pharmacist', pharmacistRoutes);
   app.use('/api/products', productRoutes);
