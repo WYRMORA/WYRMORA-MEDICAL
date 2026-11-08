@@ -25,6 +25,9 @@ This package is a deployable software codebase, not permission to operate a phar
 - [ ] Publish privacy policy, terms, consent notices, retention policy and data breach process.
 - [ ] Complete security review, backups/restore test, monitoring and incident response plan.
 
+## Technical switch (default OFF)
+- `ENABLE_MARKETPLACE_ORDERS=false` keeps customer cart and checkout APIs disabled. Do not turn it on merely to test a UI; enable only after all legal, pharmacy, supplier, prescription, refund/delivery and payment checks above are signed off.
+
 ## Revenue model to enable after approvals
 - Pharmacy SaaS subscription for inventory/catalogue and order management.
 - Commission on completed, legally permitted orders under pharmacy agreements.
