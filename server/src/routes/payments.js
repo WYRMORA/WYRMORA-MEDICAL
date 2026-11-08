@@ -2,11 +2,16 @@ import { Router } from 'express';
 import { randomUUID } from 'node:crypto';
 import { pool } from '../db.js';
 import { requireAuth, allowRoles } from '../middleware/auth.js';
+import { config } from '../config.js';
 
 const router = Router();
 router.use(requireAuth);
 const khaltiBase = () => process.env.KHALTI_ENV === 'production' ? 'https://khalti.com/api/v2' : 'https://dev.khalti.com/api/v2';
-const configured = () => Boolean(process.env.KHALTI_SECRET_KEY && process.env.KHALTI_RETURN_URL && process.env.KHALTI_WEBSITE_URL);
+const configured = () => {
+  try {
+    return Boolean(process.env.KHALTI_SECRET_KEY && new URL(process.env.KHALTI_RETURN_URL).protocol === 'https:' && new URL(process.env.KHALTI_WEBSITE_URL).protocol === 'https:');
+  } catch { return false; }
+};
 async function khalti(path, payload) {
   const response = await fetch(`${khaltiBase()}${path}`, {
     method: 'POST',
@@ -27,6 +32,7 @@ router.post('/khalti/initiate', allowRoles('customer'), async (req,res,next) => 
   let paymentId;
   try {
     client = await pool.connect();
+    if (!config.enableMarketplaceOrders) return res.status(403).json({ error: 'Marketplace payments remain disabled until required approvals are complete.' });
     if (!configured()) return res.status(503).json({ error: 'Khalti payment is not configured.' });
     await client.query('BEGIN');
     const order = await client.query(
