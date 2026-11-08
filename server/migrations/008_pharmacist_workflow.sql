@@ -20,10 +20,14 @@ CREATE TABLE IF NOT EXISTS pharmacist_applications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE UNIQUE INDEX IF NOT EXISTS pharmacist_applications_email_unique
-  ON pharmacist_applications(LOWER(email));
-CREATE UNIQUE INDEX IF NOT EXISTS pharmacist_applications_registration_unique
-  ON pharmacist_applications(LOWER(registration_number));
+-- Rejected applications may be resubmitted. Keep the same partial uniqueness
+-- rules as migration 009 so re-running this idempotent migration is safe.
+CREATE UNIQUE INDEX IF NOT EXISTS pharmacist_applications_email_active_unique
+  ON pharmacist_applications(LOWER(email))
+  WHERE status <> 'rejected';
+CREATE UNIQUE INDEX IF NOT EXISTS pharmacist_applications_registration_active_unique
+  ON pharmacist_applications(LOWER(registration_number))
+  WHERE status <> 'rejected';
 CREATE INDEX IF NOT EXISTS pharmacist_applications_status_idx
   ON pharmacist_applications(status, created_at);
 

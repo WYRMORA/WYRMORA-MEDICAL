@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { config } from './config.js';
+import { pool } from './db.js';
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import cartRoutes from './routes/cart.js';
@@ -29,7 +30,17 @@ export function createApp() {
   app.use(originGuard);
 
   const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false });
+  // Liveness: confirms that the Node.js process is responding.
   app.get('/api/health', (req,res) => res.json({ status: 'ok', service: 'wyrmora-api' }));
+  // Readiness: confirms that the API can reach PostgreSQL before it receives traffic.
+  app.get('/api/health/ready', async (req,res) => {
+    try {
+      await pool.query('SELECT 1');
+      return res.json({ status: 'ok', service: 'wyrmora-api', database: 'ok' });
+    } catch {
+      return res.status(503).json({ status: 'unavailable', service: 'wyrmora-api', database: 'unavailable' });
+    }
+  });
   app.use('/api/auth', authLimiter, authRoutes);
   app.use('/api/medicines', medicineRoutes);
   app.use('/api/pharmacist', pharmacistRoutes);

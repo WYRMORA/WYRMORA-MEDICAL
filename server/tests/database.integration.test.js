@@ -1,4 +1,7 @@
 import test, { after } from 'node:test';
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import request from 'supertest';
@@ -113,6 +116,16 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
         issuingAuthority:'Nepal Pharmacy Council'
       });
     assert.equal(reapplication.status,201);
+
+    // A later deployment re-runs the migration chain. A rejected application
+    // and its active reapplication must not make migration 008 fail.
+    const serverDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+    const migrationRerun = spawnSync(process.execPath, ['scripts/migrate.js'], {
+      cwd: serverDirectory,
+      encoding: 'utf8',
+      env: process.env
+    });
+    assert.equal(migrationRerun.status, 0, migrationRerun.stderr || migrationRerun.stdout);
 
     const login = await request(app)
       .post('/api/auth/login')
