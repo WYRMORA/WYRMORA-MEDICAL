@@ -258,6 +258,20 @@ test('marketplace checkout is disabled by default while customer read-only acces
 });
 
 
+test('PostgreSQL pool error logging omits sensitive error messages', () => {
+  const originalError = console.error;
+  const messages = [];
+  console.error = (...args) => messages.push(args);
+  try {
+    pool.emit('error', Object.assign(new Error('secret connection string detail'), { code: 'ECONNRESET' }));
+    assert.equal(messages.length, 1);
+    assert.deepEqual(messages[0], ['Unexpected PostgreSQL pool error:', { code: 'ECONNRESET' }]);
+    assert.doesNotMatch(JSON.stringify(messages), /secret connection string detail/);
+  } finally {
+    console.error = originalError;
+  }
+});
+
 test('readiness endpoint confirms PostgreSQL connectivity', async () => {
   const originalQuery = pool.query;
   pool.query = async () => ({ rows: [{ '?column?': 1 }], rowCount: 1 });
