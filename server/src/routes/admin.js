@@ -203,6 +203,21 @@ router.post('/test-products', async (req,res,next) => {
   } catch(e){next(e);}
 });
 
+router.get('/refunds', async (req,res,next) => {
+  try {
+    const result=await pool.query(
+      `SELECT p.id,p.order_id,p.provider,p.amount_paisa,p.provider_status,p.provider_transaction_id,p.created_at,p.updated_at,
+              o.order_number,o.payment_status,u.name AS buyer_name,u.email AS buyer_email
+       FROM payment_transactions p
+       JOIN orders o ON o.id=p.order_id
+       JOIN users u ON u.id=p.user_id
+       WHERE p.status='refund_requested'
+       ORDER BY p.updated_at ASC LIMIT 300`
+    );
+    res.json({refunds:result.rows});
+  }catch(e){next(e);}
+});
+
 router.get('/orders', async (req,res,next) => {
   try {
     const result=await pool.query(
