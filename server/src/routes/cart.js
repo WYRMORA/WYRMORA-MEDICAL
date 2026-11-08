@@ -21,7 +21,7 @@ router.get('/', async (req, res, next) => {
 });
 
 router.post('/items', async (req, res, next) => {
-  const client = await pool.connect();
+  let client;
   let transactionOpen = false;
   try {
     const productId = Number(req.body?.productId);
@@ -29,6 +29,7 @@ router.post('/items', async (req, res, next) => {
     if (!Number.isInteger(productId) || productId < 1 || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
       return res.status(400).json({ error: 'Invalid product or quantity.' });
     }
+    client = await pool.connect();
     await client.query('BEGIN');
     transactionOpen = true;
     const product = await client.query(
@@ -59,9 +60,9 @@ router.post('/items', async (req, res, next) => {
     await client.query('COMMIT'); transactionOpen = false;
     res.status(201).json({ message: 'Added to cart.', quantity: nextQuantity });
   } catch (e) {
-    if (transactionOpen) await client.query('ROLLBACK');
+    if (transactionOpen && client) await client.query('ROLLBACK').catch(() => {});
     next(e);
-  } finally { client.release(); }
+  } finally { client?.release(); }
 });
 
 router.delete('/items/:productId', async (req, res, next) => {

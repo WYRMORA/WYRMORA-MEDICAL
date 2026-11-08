@@ -6,13 +6,14 @@ const router = Router();
 router.use(requireAuth, allowRoles('customer'));
 
 router.post('/', async (req, res, next) => {
-  const client = await pool.connect();
+  let client;
   let transactionOpen = false;
   try {
     const shippingAddress = String(req.body?.shippingAddress || '').trim();
     if (shippingAddress.length < 10 || shippingAddress.length > 500) {
       return res.status(400).json({ error: 'Enter a complete delivery address.' });
     }
+    client = await pool.connect();
     await client.query('BEGIN');
     transactionOpen = true;
     const cart = await client.query(
@@ -72,9 +73,9 @@ router.post('/', async (req, res, next) => {
       payment: { status: 'unpaid', message: 'Payment provider is not configured. No money was charged.' }
     });
   } catch (e) {
-    if (transactionOpen) await client.query('ROLLBACK');
+    if (transactionOpen && client) await client.query('ROLLBACK').catch(() => {});
     next(e);
-  } finally { client.release(); }
+  } finally { client?.release(); }
 });
 
 router.get('/mine', async (req, res, next) => {
