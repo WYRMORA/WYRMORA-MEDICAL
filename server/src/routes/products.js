@@ -18,7 +18,7 @@ router.get('/', async (req, res, next) => {
        JOIN users u ON u.id=p.seller_id LEFT JOIN sellers s ON s.user_id=p.seller_id
        WHERE ${where} ORDER BY p.created_at DESC LIMIT 100`, values
     );
-    res.json({ products: result.rows });
+    res.json({ products: result.rows, commerceEnabled: config.enableMarketplaceOrders });
   } catch (err) { next(err); }
 });
 
