@@ -59,6 +59,11 @@ export default function CustomerPortal({ onClose }) {
   }
 
   useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('token');
+    if (token) { setResetToken(token); setMode('reset-confirm'); }
+  }, []);
+
+  useEffect(() => {
     let active = true;
     Promise.all([request('/api/auth/me'), request('/api/products')])
       .then(([session, catalog]) => {
