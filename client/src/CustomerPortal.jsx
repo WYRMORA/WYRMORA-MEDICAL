@@ -38,6 +38,8 @@ export default function CustomerPortal({ onClose }) {
   const [commerceEnabled, setCommerceEnabled] = useState(false);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [paymentPidx, setPaymentPidx] = useState('');
   const [address, setAddress] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -50,17 +52,21 @@ export default function CustomerPortal({ onClose }) {
     setCommerceEnabled(data.commerceEnabled === true);
   }
   async function loadCustomerData() {
-    const [cartData, orderData] = await Promise.all([
+    const [cartData, orderData, paymentData] = await Promise.all([
       request('/api/cart'),
-      request('/api/orders/mine')
+      request('/api/orders/mine'),
+      request('/api/payments/mine')
     ]);
     setCart(cartData.items || []);
     setOrders(orderData.orders || []);
+    setPayments(paymentData.payments || []);
   }
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get('token');
     if (token) { setResetToken(token); setMode(window.location.pathname === '/verify-email' ? 'verify-confirm' : 'reset-confirm'); }
+    const pidx = new URLSearchParams(window.location.search).get('pidx');
+    if (pidx) setPaymentPidx(pidx);
   }, []);
 
   useEffect(() => {
@@ -88,6 +94,46 @@ export default function CustomerPortal({ onClose }) {
   useEffect(() => {
     if (user?.role === 'customer') loadCustomerData().catch(e => setError(e.message));
   }, [user]);
+
+  useEffect(() => {
+    if (user?.role !== 'customer' || !paymentPidx) return;
+    let active = true;
+    setBusy(true);
+    request('/api/payments/khalti/verify', { method:'POST', body:JSON.stringify({pidx:paymentPidx}) })
+      .then(async data => {
+        if (!active) return;
+        setMessage(data.verified ? 'Khalti payment सफलतापूर्वक verify भयो।' : data.message);
+        await loadCustomerData();
+      })
+      .catch(e => { if (active) setError(e.message); })
+      .finally(() => {
+        if (active) {
+          setBusy(false); setPaymentPidx('');
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      });
+    return () => { active = false; };
+  }, [user, paymentPidx]);
+
+  async function startPayment(order) {
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const data = await request('/api/payments/khalti/initiate', {
+        method:'POST', body:JSON.stringify({orderId:order.id})
+      });
+      window.location.assign(data.payment.paymentUrl);
+    } catch(e) { setError(e.message); setBusy(false); }
+  }
+
+  async function requestRefund(payment) {
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const data = await request(`/api/payments/${payment.id}/refund-request`, {method:'POST',body:JSON.stringify({})});
+      setMessage(data.message);
+      await loadCustomerData();
+    } catch(e) { setError(e.message); }
+    finally { setBusy(false); }
+  }
 
   async function authenticate(event) {
     event.preventDefault();
@@ -160,7 +206,7 @@ export default function CustomerPortal({ onClose }) {
 
   async function logout() {
     try { await request('/api/auth/logout', { method: 'POST' }); }
-    finally { setUser(null); setCart([]); setOrders([]); setView('shop'); setMessage('Logout भयो।'); }
+    finally { setUser(null); setCart([]); setOrders([]); setPayments([]); setView('shop'); setMessage('Logout भयो।'); }
   }
 
   const total = useMemo(
@@ -241,9 +287,18 @@ export default function CustomerPortal({ onClose }) {
         <h3>My Orders</h3>
         {orders.map(order => <article className="customer-order" key={order.id}>
           <div><strong>{order.order_number} {order.is_test&&<span className="admin-tag">TEST ONLY</span>}</strong><small>{new Date(order.created_at).toLocaleString()}</small></div>
-          <div><strong>{money(order.total_amount)}</strong><small>Order: {order.order_status} · Payment: {order.payment_status}</small></div>
+          <div><strong>{money(order.total_amount)}</strong><small>Order: {order.order_status} · Payment: {order.payment_status}</small>
+            {commerceEnabled && !order.is_test && ['unpaid','failed'].includes(order.payment_status) && <button disabled={busy} onClick={() => startPayment(order)}>Pay with Khalti</button>}
+          </div>
         </article>)}
         {!orders.length && <p>अहिलेसम्म कुनै order छैन।</p>}
+        {payments.length > 0 && <div className="customer-payment-history"><h4>Payment History</h4>
+          {payments.map(payment => <article className="customer-order" key={payment.id}>
+            <div><strong>Order #{payment.order_id} · {money(Number(payment.amount_paisa)/100)}</strong><small>{payment.provider.toUpperCase()} · {payment.status}</small></div>
+            {payment.status === 'completed' && <button disabled={busy} onClick={() => requestRefund(payment)}>Request Refund</button>}
+            {payment.status === 'refund_requested' && <small>Refund review requested</small>}
+          </article>)}
+        </div>}
       </div>}
       <div className="customer-safety"><strong>महत्त्वपूर्ण:</strong> {commerceEnabled ? 'Marketplace checkout enabled by operator configuration. Medicine sales, prescription validation, pharmacy fulfillment and delivery still require their own legal approvals and verified partner workflows.' : 'हाल product catalogue मात्र हेर्न मिल्छ; cart, checkout र order placement बन्द छन्। WYRMORA मा औषधि बिक्री, prescription validation, pharmacy fulfillment र delivery सेवा आवश्यक कानुनी/व्यावसायिक स्वीकृति नआएसम्म सक्रिय हुँदैनन्।'}</div>
     </>}
