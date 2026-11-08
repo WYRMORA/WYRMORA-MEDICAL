@@ -36,6 +36,7 @@ router.get('/:id/image', async (req,res,next) => {
   try {
     const result=await pool.query(
       `SELECT p.image_asset_id FROM products p
+       JOIN sellers s ON s.user_id=p.seller_id AND s.verification_status='verified'
        WHERE p.id=$1 AND p.status='approved' AND p.is_active=true AND p.image_asset_id IS NOT NULL`,
       [req.params.id]
     );
