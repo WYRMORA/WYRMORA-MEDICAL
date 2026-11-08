@@ -26,10 +26,7 @@ const emptyForm = {
 const emptyVerification = {
   medicineId: '',
   status: 'pending',
-  pharmacistName: '',
-  registration: '',
-  notes: '',
-  reviewConfirmed: false
+  notes: ''
 };
 
 const money = value => {
@@ -278,21 +275,6 @@ export default function App() {
       return;
     }
 
-    if (
-      verificationForm.status === 'verified' &&
-      (
-        !verificationForm.pharmacistName.trim() ||
-        !verificationForm.registration.trim() ||
-        !verificationForm.reviewConfirmed
-      )
-    ) {
-      showMessage(
-        'Verified गर्न वास्तविक Pharmacist को नाम, दर्ता नम्बर र समीक्षा पुष्टि आवश्यक छ।',
-        'error'
-      );
-      return;
-    }
-
     setSavingVerification(true);
 
     try {
@@ -305,10 +287,7 @@ export default function App() {
           },
           body: JSON.stringify({
             status: verificationForm.status,
-            pharmacistName: verificationForm.pharmacistName,
-            registration: verificationForm.registration,
-            notes: verificationForm.notes,
-            reviewConfirmed: verificationForm.reviewConfirmed
+            notes: verificationForm.notes
           })
         }
       );
@@ -559,8 +538,10 @@ export default function App() {
             <h3>Pharmacist Verification</h3>
 
             <p>
-              Verified स्थिति वास्तविक योग्य Pharmacist ले समीक्षा
-              गरेपछि मात्र चयन गर्नुहोस्।
+              हाल Pharmacist को छुट्टै सुरक्षित reviewer account र
+              दर्ता-पुष्टि प्रक्रिया तयार नभएकाले “Verified” बन्द छ।
+              योग्य Pharmacist को वास्तविक समीक्षा नभएसम्म Pending वा
+              Under Review मात्र राख्नुहोस्।
             </p>
 
             <form onSubmit={saveVerification}>
@@ -588,62 +569,12 @@ export default function App() {
                   value={verificationForm.status}
                   onChange={event => {
                     updateVerificationForm('status', event.target.value);
-                    updateVerificationForm('reviewConfirmed', false);
                   }}
                 >
                   <option value="pending">Pending</option>
                   <option value="under_review">Under Review</option>
-                  <option value="verified">Verified</option>
                 </select>
               </label>
-
-              {verificationForm.status === 'verified' && (
-                <>
-                  <label>
-                    Pharmacist Name
-                    <input
-                      value={verificationForm.pharmacistName}
-                      onChange={event =>
-                        updateVerificationForm(
-                          'pharmacistName',
-                          event.target.value
-                        )
-                      }
-                      required
-                    />
-                  </label>
-
-                  <label>
-                    Registration Number
-                    <input
-                      value={verificationForm.registration}
-                      onChange={event =>
-                        updateVerificationForm(
-                          'registration',
-                          event.target.value
-                        )
-                      }
-                      required
-                    />
-                  </label>
-
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={verificationForm.reviewConfirmed}
-                      onChange={event =>
-                        updateVerificationForm(
-                          'reviewConfirmed',
-                          event.target.checked
-                        )
-                      }
-                      required
-                    />
-                    मैले Pharmacist को योग्यता जाँच गरी वास्तविक
-                    समीक्षा भएको पुष्टि गर्छु।
-                  </label>
-                </>
-              )}
 
               <label>
                 Review Notes
