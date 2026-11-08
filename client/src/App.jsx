@@ -332,7 +332,7 @@ export default function App() {
     <div className="app">
       <header className="top">
         <div className="brand">
-          <div className="logo">W</div>
+          <img className="logo" src="/icon.svg" alt="WYRMORA Medical logo" />
           <div>
             <strong>WYRMORA</strong>
             <small>MEDICAL</small>
