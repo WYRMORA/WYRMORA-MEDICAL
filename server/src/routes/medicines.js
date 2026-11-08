@@ -46,24 +46,8 @@ const schema = z.object({
 
 
 const verificationSchema = z.object({
-  status: z.enum(['pending', 'under_review', 'verified']),
-
-  pharmacistName: z.preprocess(
-    value => typeof value === 'string' && value.trim() === ''
-      ? undefined
-      : value,
-    z.string().trim().min(2).max(160).optional()
-  ),
-
-  registration: z.preprocess(
-    value => typeof value === 'string' && value.trim() === ''
-      ? undefined
-      : value,
-    z.string().trim().min(2).max(100).optional()
-  ),
-
-  notes: z.string().trim().max(2000).optional().default(''),
-  reviewConfirmed: z.boolean().optional().default(false)
+  status: z.enum(['pending', 'under_review']),
+  notes: z.string().trim().max(2000).optional().default('')
 });
 
 const map = r => ({
@@ -210,6 +194,14 @@ router.post('/', requireAuth, allowRoles('super_admin','editor'), adminWriteLimi
 // PATCH: Pharmacist verification
 router.patch('/:id/verification', requireAuth, allowRoles('super_admin','editor'), adminWriteLimit, async (req,res,next) => {
   try {
+    // Do not allow an administrator to self-attest a clinical review.
+    // A dedicated pharmacist identity and credential-verification workflow
+    // must exist before any record can be marked clinically verified.
+    if (req.body?.status === 'verified') {
+      return res.status(403).json({
+        error: 'Pharmacist verification is temporarily locked until qualified reviewer accounts and credential checks are implemented.'
+      });
+    }
 
     const parsed = verificationSchema.safeParse(req.body);
 
@@ -225,32 +217,17 @@ router.patch('/:id/verification', requireAuth, allowRoles('super_admin','editor'
 
     const d = parsed.data;
 
-    if (
-      d.status === 'verified' &&
-      (!d.pharmacistName || !d.registration || !d.reviewConfirmed)
-    ) {
-      return res.status(400).json({
-        error: 'Verified गर्न Pharmacist को नाम, registration र वास्तविक समीक्षा पुष्टि आवश्यक छ।'
-      });
-    }
-
     const { rows } = await pool.query(
       `UPDATE medicines
        SET verification_status = $2,
-           verified_by = CASE WHEN $2 = 'verified' THEN $3 ELSE NULL END,
-           pharmacist_registration = CASE WHEN $2 = 'verified' THEN $4 ELSE NULL END,
-           verified_at = CASE WHEN $2 = 'verified' THEN NOW() ELSE NULL END,
-           verification_notes = $5,
+           verified_by = NULL,
+           pharmacist_registration = NULL,
+           verified_at = NULL,
+           verification_notes = $3,
            updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [
-        req.params.id,
-        d.status,
-        d.pharmacistName || null,
-        d.registration || null,
-        d.notes
-      ]
+      [req.params.id, d.status, d.notes]
     );
 
     if (!rows.length) {
@@ -259,7 +236,7 @@ router.patch('/:id/verification', requireAuth, allowRoles('super_admin','editor'
       });
     }
 
-    await pool.query('INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata) VALUES($1,$2,$3,$4,$5)', [req.user.id, 'medicine_verification_updated', 'medicine', req.params.id, JSON.stringify({ status: d.status, pharmacistName: d.pharmacistName || null })]);
+    await pool.query('INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata) VALUES($1,$2,$3,$4,$5)', [req.user.id, 'medicine_verification_updated', 'medicine', req.params.id, JSON.stringify({ status: d.status })]);
     res.json({ item: map(rows[0]) });
   } catch (e) {
     next(e);
