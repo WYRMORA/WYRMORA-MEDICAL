@@ -1,11 +1,11 @@
-# Render Blueprint: FREE test deployment. Free Postgres expires after 30 days; not for production data.
+# Render Blueprint: free tier is for testing only; free Postgres expires after 30 days.
 services:
   - type: web
     name: wyrmora-medical-api
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm install && npm run migrate --prefix server
+    buildCommand: npm install --prefix server && npm run migrate --prefix server
     startCommand: npm start --prefix server
     healthCheckPath: /api/health
     autoDeployTrigger: commit
@@ -23,8 +23,6 @@ services:
           name: wyrmora-medical-db
           property: connectionString
       - key: JWT_SECRET
-        generateValue: true
-      - key: MEDICINE_ADMIN_KEY
         generateValue: true
 databases:
   - name: wyrmora-medical-db
