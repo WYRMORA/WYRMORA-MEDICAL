@@ -386,10 +386,8 @@ router.get('/pharmacists/applications', async (req,res,next) => {
 router.patch('/pharmacists/applications/:id', async (req,res,next) => {
   const decision = String(req.body?.decision || '');
   const notes = String(req.body?.notes || '').trim();
-  const checkedAgainst = String(req.body?.checkedAgainst || '').trim();
-  if (!['approved','rejected'].includes(decision) || notes.length > 2000 ||
-      (decision === 'approved' && checkedAgainst.length < 5)) {
-    return res.status(400).json({ error: 'Decision, review notes र approval गर्दा credential जाँचको आधार आवश्यक छ।' });
+  if (!['approved','rejected'].includes(decision) || notes.length > 2000) {
+    return res.status(400).json({ error: 'Decision र review notes ठीकसँग दिनुहोस्। Credential verification छुट्टै चरणमा हुन्छ।' });
   }
   let client;
   let open = false;
@@ -431,7 +429,7 @@ router.patch('/pharmacists/applications/:id', async (req,res,next) => {
     await client.query(
       `INSERT INTO audit_logs(actor_id,action,entity_type,entity_id,metadata)
        VALUES($1,$2,'pharmacist_application',$3,$4)`,
-      [req.user.id,`pharmacist_application_${decision}`,req.params.id,JSON.stringify({registrationNumber:a.registration_number,checkedAgainst:decision==='approved'?checkedAgainst:null})]
+      [req.user.id,`pharmacist_application_${decision}`,req.params.id,JSON.stringify({registrationNumber:a.registration_number,provisionalAccount:decision==='approved'})]
     );
     await client.query('COMMIT'); open = false;
     res.json({ status: decision, message: decision === 'approved' ? 'Provisional Pharmacist account बन्यो। Credential upload र Super Admin verification पूरा नभएसम्म clinical access बन्द रहन्छ।' : 'आवेदन अस्वीकृत गरियो।' });
