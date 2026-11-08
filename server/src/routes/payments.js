@@ -36,12 +36,12 @@ router.post('/khalti/initiate', allowRoles('customer'), async (req,res,next) => 
     if (!configured()) return res.status(503).json({ error: 'Khalti payment is not configured.' });
     await client.query('BEGIN');
     const order = await client.query(
-      `SELECT id,order_number,total_amount,payment_status FROM orders
+      `SELECT id,order_number,total_amount,payment_status,order_status FROM orders
        WHERE id=$1 AND user_id=$2 AND is_test=false FOR UPDATE`,
       [req.body?.orderId,req.user.id]
     );
     if (!order.rowCount) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Order not found.' }); }
-    if (order.rows[0].payment_status === 'paid') { await client.query('ROLLBACK'); return res.status(409).json({ error: 'Order is already paid.' }); }
+    if (['paid','refunded'].includes(order.rows[0].payment_status) || order.rows[0].order_status === 'cancelled') { await client.query('ROLLBACK'); return res.status(409).json({ error: 'This order cannot accept another payment.' }); }
     const amountPaisa = Math.round(Number(order.rows[0].total_amount) * 100);
     if (!Number.isSafeInteger(amountPaisa) || amountPaisa < 1000) { await client.query('ROLLBACK'); return res.status(400).json({ error: 'Khalti minimum payment is NPR 10.' }); }
     const purchaseOrderId = `WYRMORA-${order.rows[0].id}-${randomUUID()}`;
@@ -71,6 +71,7 @@ router.post('/khalti/initiate', allowRoles('customer'), async (req,res,next) => 
       await pool.query("UPDATE payment_transactions SET status='failed',updated_at=NOW() WHERE id=$1 AND status='initiating'",[paymentId]).catch(()=>{});
       await pool.query("UPDATE orders SET payment_status='failed' WHERE id=(SELECT order_id FROM payment_transactions WHERE id=$1) AND payment_status='pending'",[paymentId]).catch(()=>{});
     }
+    if (e.code === '23505') return res.status(409).json({ error: 'A payment attempt is already active for this order.' });
     return next(e);
   } finally { client?.release(); }
 });
