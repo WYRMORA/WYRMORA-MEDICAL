@@ -15,6 +15,7 @@ export default function PharmacistPortal({ onClose }) {
   const [email,setEmail] = useState('');
   const [password,setPassword] = useState('');
   const [application,setApplication] = useState(emptyApplication);
+  const [credentialFile,setCredentialFile] = useState(null);
   const [medicines,setMedicines] = useState([]);
   const [selected,setSelected] = useState('');
   const [recommendation,setRecommendation] = useState('approved');
@@ -73,6 +74,25 @@ export default function PharmacistPortal({ onClose }) {
     finally { setBusy(false); }
   }
 
+  async function submitCredential(event) {
+    event.preventDefault();
+    if(!credentialFile)return;
+    setBusy(true);setError('');setMessage('');
+    try{
+      const presigned=await api('/api/uploads/presign',{method:'POST',body:JSON.stringify({
+        purpose:'pharmacist_credential',fileName:credentialFile.name,
+        contentType:credentialFile.type,sizeBytes:credentialFile.size
+      })});
+      const uploaded=await fetch(presigned.uploadUrl,{method:'PUT',headers:{'Content-Type':credentialFile.type},body:credentialFile});
+      if(!uploaded.ok)throw new Error('Private file upload failed. Check storage bucket CORS and credentials.');
+      await api(`/api/uploads/${presigned.asset.id}/complete`,{method:'POST',body:JSON.stringify({})});
+      const result=await api(`/api/uploads/${presigned.asset.id}/attach`,{method:'POST',body:JSON.stringify({})});
+      setCredentialFile(null);setMessage(result.message);
+      setMedicines([]);
+    }catch(e){setError(e.message);}
+    finally{setBusy(false);}
+  }
+
   async function submitReview(event) {
     event.preventDefault(); setBusy(true); setError(''); setMessage('');
     try {
@@ -109,7 +129,7 @@ export default function PharmacistPortal({ onClose }) {
         <label>Password<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required /></label>
         <button className="primary" disabled={busy}>{busy?'Signing in...':'Secure Pharmacist Login'}</button>
       </form> : <form onSubmit={submitApplication}>
-        <p>आवेदनमा दिएको Nepal Pharmacy Council वा सम्बन्धित issuing authority को registration details Super Admin ले आधिकारिक register बाट जाँच गर्नेछ। Credential file upload हाल उपलब्ध छैन; आवश्यक कागजात सुरक्षित माध्यमबाट छुट्टै उपलब्ध गराउनुपर्नेछ।</p>
+        <p>आवेदनमा दिएको Nepal Pharmacy Council वा सम्बन्धित issuing authority को registration details Super Admin ले आधिकारिक register बाट जाँच गर्नेछ। Account स्वीकृत भएपछि private storage मा PDF/JPG/PNG credential upload गर्न सकिन्छ। Super Admin ले issuing authority सँग प्रत्यक्ष जाँच गरेपछि मात्र clinical access सक्रिय हुन्छ।</p>
         <div className="form-grid">
           <label>पूरा नाम<input value={application.name} onChange={e=>updateApplication('name',e.target.value)} minLength="2" maxLength="80" required /></label>
           <label>Email<input type="email" value={application.email} onChange={e=>updateApplication('email',e.target.value)} required /></label>
@@ -123,6 +143,12 @@ export default function PharmacistPortal({ onClose }) {
       </form>}
     </>}
     {user && <div className="admin-manage">
+      <h3>Private Credential Submission</h3>
+      <p>Pharmacist credential (PDF, JPG वा PNG; अधिकतम 10 MB) निजी storage मा पठाउनुहोस्। Super Admin को official verification पूरा नभएसम्म clinical review बन्द रहन्छ।</p>
+      <form onSubmit={submitCredential}>
+        <label>Credential document<input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e=>setCredentialFile(e.target.files?.[0]||null)} required /></label>
+        <button className="primary" disabled={busy||!credentialFile}>{busy?'Uploading...':'Submit private credential'}</button>
+      </form>
       <h3>Medicine Clinical Review Queue</h3>
       <p>हरेक review मा clinical reasoning र विश्वसनीय references अनिवार्य छन्। यो review सार्वजनिक हुँदैन जबसम्म Super Admin ले छुट्टै publish गर्दैन।</p>
       <form onSubmit={submitReview}>
