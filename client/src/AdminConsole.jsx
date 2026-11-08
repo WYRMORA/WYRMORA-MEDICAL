@@ -30,7 +30,20 @@ export default function AdminConsole({children,onClose}) {
   async function createEditor(e){e.preventDefault();setBusy(true);setError('');try{await api('/api/admin/editors',{method:'POST',body:JSON.stringify({name,email:editorEmail,password:editorPassword})});setName('');setEditorEmail('');setEditorPassword('');await refresh()}catch(e){setError(e.message)}finally{setBusy(false)}}
   async function toggleEditor(account){setError('');try{await api(`/api/admin/users/${account.id}/status`,{method:'PATCH',body:JSON.stringify({isActive:!account.is_active})});await refresh()}catch(e){setError(e.message)}}
   async function reviewProduct(product,status){setError('');try{await api(`/api/admin/products/${product.id}/approve`,{method:'PATCH',body:JSON.stringify({status})});setProducts(items=>items.filter(x=>x.id!==product.id));await refresh()}catch(e){setError(e.message)}}
-  async function reviewSeller(seller,status){setError('');try{await api(`/api/admin/sellers/${seller.id}/verification`,{method:'PATCH',body:JSON.stringify({status})});setSellers(items=>items.filter(x=>x.id!==seller.id));}catch(e){setError(e.message)}}
+  async function reviewSeller(seller,status){
+    setError('');
+    let checkedAgainst='',notes='';
+    if(status==='verified'){
+      checkedAgainst=window.prompt('कुन सरकारी निकाय/आधिकारिक register बाट business वा pharmacy credential जाँच गर्नुभयो?')||'';
+      if(checkedAgainst.trim().length<5)return;
+      notes=window.prompt('Verification note लेख्नुहोस्:')||'';
+    }
+    try{
+      await api(`/api/admin/sellers/${seller.id}/verification`,{method:'PATCH',body:JSON.stringify({status,checkedAgainst,notes})});
+      setSellers(items=>items.filter(x=>x.id!==seller.id));
+      setMessage(status==='verified'?'Seller credential review audit log मा सुरक्षित भयो।':'Seller status update भयो।');
+    }catch(e){setError(e.message)}
+  }
   async function createTestProduct(e){e.preventDefault();setTestProductBusy(true);setError('');try{await api('/api/admin/test-products',{method:'POST',body:JSON.stringify({name:testProductName,description:testProductDescription})});setTestProductName('Sample Demo Item');setTestProductDescription('TEST ONLY product for internal order workflow checks.');setMessage('TEST ONLY product created. No real payment or fulfillment is possible.');}catch(e){setError(e.message)}finally{setTestProductBusy(false)}}
   async function openCredential(assetId){
     if(!assetId){setError('Credential document uploaded छैन।');return;}
@@ -59,7 +72,7 @@ export default function AdminConsole({children,onClose}) {
   }
   async function setTicketStatus(ticket,status){setError('');try{await api(`/api/admin/tickets/${ticket.id}`,{method:'PATCH',body:JSON.stringify({status})});setTickets(items=>items.map(x=>x.id===ticket.id?{...x,status}:x))}catch(e){setError(e.message)}}
   async function setMedicineReportStatus(report,status){setError('');try{const d=await api(`/api/admin/medicine-reports/${report.id}`,{method:'PATCH',body:JSON.stringify({status,adminNote:report.admin_note||''})});setMedicineReports(items=>items.map(x=>x.id===report.id?{...x,...d.report}:x))}catch(e){setError(e.message)}}
-  async function decidePharmacist(app,decision){setError('');let checkedAgainst='';let notes='';if(decision==='approved'){checkedAgainst=window.prompt('कुन आधिकारिक Register/स्रोतमा registration number जाँच गर्नुभयो?')||'';if(checkedAgainst.trim().length<5)return;notes=window.prompt('Credential review note लेख्नुहोस्:')||'';}else{notes=window.prompt('अस्वीकृतिको कारण लेख्नुहोस्:')||'';}try{await api(`/api/admin/pharmacists/applications/${app.id}`,{method:'PATCH',body:JSON.stringify({decision,checkedAgainst,notes})});setPharmacistApplications(items=>items.filter(x=>x.id!==app.id));await refresh()}catch(e){setError(e.message)}}
+  async function decidePharmacist(app,decision){setError('');let notes='';if(decision==='approved'){notes=window.prompt('Provisional account approval note (credential verification will happen after private document upload):')||'';}else{notes=window.prompt('अस्वीकृतिको कारण लेख्नुहोस्:')||'';}try{await api(`/api/admin/pharmacists/applications/${app.id}`,{method:'PATCH',body:JSON.stringify({decision,checkedAgainst:'Provisional application review',notes})});setPharmacistApplications(items=>items.filter(x=>x.id!==app.id));await refresh()}catch(e){setError(e.message)}}
   async function publishMedicineReview(review){setError('');try{await api(`/api/admin/medicines/${review.medicine_id}/publish-verification`,{method:'PATCH',body:JSON.stringify({})});setMedicineReviews(items=>items.filter(x=>x.medicine_id!==review.medicine_id));setMessage('Pharmacist review प्रकाशित भयो।')}catch(e){setError(e.message)}}
   async function verifyPharmacistCredential(account){
     const checkedAgainst=window.prompt('कुन आधिकारिक Register/स्रोतमा registration र credential जाँच गर्नुभयो?')||'';
