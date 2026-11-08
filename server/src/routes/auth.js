@@ -16,13 +16,15 @@ router.post('/register',async(req,res,next)=>{try{
  if(!parsed.success)return res.status(400).json({error:'Invalid registration details.',details:parsed.error.flatten()});
  const {name,email,password}=parsed.data,hash=await bcrypt.hash(password,12);
  const result=await pool.query("INSERT INTO users(name,email,password_hash,role) VALUES($1,$2,$3,'customer') RETURNING id,name,email,role,session_version",[name,email,hash]);
- setSession(res,result.rows[0]);res.status(201).json({user:result.rows[0]});
+ if(!config.requireVerifiedEmail)setSession(res,result.rows[0]);
+ res.status(201).json({user:result.rows[0],requiresEmailVerification:config.requireVerifiedEmail});
 }catch(err){if(err.code==='23505')return res.status(409).json({error:'An account with this email already exists.'});next(err);}});
 router.post('/login',async(req,res,next)=>{try{
  const email=String(req.body?.email||'').trim().toLowerCase(),password=String(req.body?.password||'');
  if(!email||!password||email.length>254||password.length>72)return res.status(400).json({error:'Email and password are required.'});
- const result=await pool.query('SELECT id,name,email,role,password_hash,session_version FROM users WHERE email=$1 AND is_active=true',[email]),user=result.rows[0];
+ const result=await pool.query('SELECT id,name,email,role,password_hash,session_version,email_verified_at FROM users WHERE email=$1 AND is_active=true',[email]),user=result.rows[0];
  if(!user||!(await bcrypt.compare(password,user.password_hash)))return res.status(401).json({error:'Email or password is incorrect.'});
+ if(config.requireVerifiedEmail&&user.role==='customer'&&!user.email_verified_at)return res.status(403).json({error:'Email verification is required before login. Request a verification link below.'});
  setSession(res,user);delete user.password_hash;res.json({user});
 }catch(err){next(err);}});
 router.post('/bootstrap-super-admin',async(req,res,next)=>{
