@@ -117,6 +117,32 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
       { subject: String(adminId), issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
     );
     const adminCookie = `${config.cookieName}=${adminToken}`;
+    const sellerApprovalWithoutCredential=await request(app)
+      .patch(`/api/admin/sellers/${sellerProfile.body.profile.id}/verification`)
+      .set('Cookie',adminCookie)
+      .set('Origin',config.clientOrigins[0])
+      .send({status:'verified',checkedAgainst:'Official register',notes:'Checked'});
+    assert.equal(sellerApprovalWithoutCredential.status,409);
+    const sellerCredentialId=randomUUID();
+    await pool.query(
+      `INSERT INTO private_assets(id,owner_user_id,purpose,object_key,original_name,content_type,size_bytes,status,uploaded_at)
+       VALUES($1,$2,'seller_credential',$3,'license.pdf','application/pdf',1024,'uploaded',NOW())`,
+      [sellerCredentialId,userId,`integration/private/seller/${sellerCredentialId}.pdf`]
+    );
+    await pool.query('UPDATE sellers SET credential_asset_id=$1 WHERE user_id=$2',[sellerCredentialId,userId]);
+    const sellerApproval=await request(app)
+      .patch(`/api/admin/sellers/${sellerProfile.body.profile.id}/verification`)
+      .set('Cookie',adminCookie)
+      .set('Origin',config.clientOrigins[0])
+      .send({status:'verified',checkedAgainst:'Official issuing authority register',notes:'Business identity and license checked.'});
+    assert.equal(sellerApproval.status,200);
+    assert.equal(sellerApproval.body.seller.verification_status,'verified');
+    const sellerAudit=await pool.query(
+      `SELECT metadata FROM audit_logs WHERE actor_id=$1 AND action='seller_verification_updated' AND entity_id=$2 ORDER BY created_at DESC LIMIT 1`,
+      [adminId,String(sellerProfile.body.profile.id)]
+    );
+    assert.equal(sellerAudit.rowCount,1);
+    assert.equal(sellerAudit.rows[0].metadata.assetId,sellerCredentialId);
     const approvedListing = await request(app)
       .patch(`/api/admin/products/${sellerProductId}/approve`)
       .set('Cookie',adminCookie)
