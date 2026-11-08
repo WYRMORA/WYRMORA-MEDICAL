@@ -80,7 +80,8 @@ export default function CustomerPortal({ onClose }) {
     Promise.all([request('/api/auth/me'), request('/api/products')])
       .then(([session, catalog]) => {
         if (!active) return;
-        if (!new URLSearchParams(window.location.search).has('token')) setUser(session.user);
+        const accountActionPath=['/verify-email','/reset-password'].includes(window.location.pathname);
+        if (!accountActionPath) setUser(session.user);
         setProducts(catalog.products || []);
         setCommerceEnabled(catalog.commerceEnabled === true);
       })
@@ -145,11 +146,25 @@ export default function CustomerPortal({ onClose }) {
     event.preventDefault();
     setBusy(true); setError(''); setMessage('');
     try {
-      const payload = mode === 'register' ? { name, email, password } : { email, password };
-      const data = await request(`/api/auth/${mode === 'register' ? 'register' : 'login'}`, {
+      const registering=mode==='register';
+      const payload = registering ? { name, email, password } : { email, password };
+      const data = await request(`/api/auth/${registering ? 'register' : 'login'}`, {
         method: 'POST', body: JSON.stringify(payload)
       });
-      setUser(data.user); setPassword(''); setMessage('तपाईं सफलतापूर्वक login हुनुभयो।');
+      setPassword('');
+      if(registering){
+        setEmail(email);
+        await request('/api/account/email-verification/request',{method:'POST',body:JSON.stringify({email})}).catch(()=>null);
+        if(data.requiresEmailVerification){
+          setUser(null);setMode('verify-request');
+          setMessage('Account बन्यो। Email verification link पठाउन अनुरोध गरिएको छ। Inbox र Spam folder जाँच्नुहोस्।');
+        }else{
+          setUser(data.user);
+          setMessage('Account बन्यो। Email delivery configured भए verification link पठाइएको छ; account बाट Verify Email थिच्न सक्नुहुन्छ।');
+        }
+      }else{
+        setUser(data.user);setMessage('तपाईं सफलतापूर्वक login हुनुभयो।');
+      }
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   }
@@ -233,15 +248,15 @@ export default function CustomerPortal({ onClose }) {
     {message && <p className="notice success">{message}</p>}
 
     {!user ? <div className="customer-auth">
-      <h3>{mode === 'login' ? 'Customer Login' : mode === 'register' ? 'नयाँ Customer Account बनाउनुहोस्' : mode === 'reset-request' ? 'Password Reset' : mode === 'verify-confirm' ? 'Email Verification' : 'नयाँ Password राख्नुहोस्'}</h3>
+      <h3>{mode === 'login' ? 'Customer Login' : mode === 'register' ? 'नयाँ Customer Account बनाउनुहोस्' : mode === 'reset-request' ? 'Password Reset' : mode === 'verify-request' ? 'Verify Email Address' : mode === 'verify-confirm' ? 'Email Verification' : 'नयाँ Password राख्नुहोस्'}</h3>
       <p>Order request गर्न पहिले customer account मा प्रवेश गर्नुहोस्।</p>
       {mode === 'verify-confirm' ? <div><p>Email ठेगाना पुष्टि गर्न तलको बटन थिच्नुहोस्।</p><button className="primary" disabled={busy} onClick={() => requestAccountAction('verify-confirm')}>{busy ? 'Please wait...' : 'Verify Email'}</button></div> : mode === 'reset-confirm' ? <form onSubmit={event => { event.preventDefault(); requestAccountAction('confirm'); }}>
         <label>नयाँ Password<input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength="10" maxLength="72" required autoComplete="new-password" /></label>
         <small>Password मा lowercase, uppercase र number हुनुपर्छ।</small>
         <button className="primary" disabled={busy}>{busy ? 'Please wait...' : 'Password Update'}</button>
-      </form> : mode === 'reset-request' ? <form onSubmit={event => { event.preventDefault(); requestAccountAction('reset'); }}>
+      </form> : mode === 'reset-request' || mode === 'verify-request' ? <form onSubmit={event => { event.preventDefault(); requestAccountAction(mode==='reset-request'?'reset':'verify'); }}>
         <label>Email<input type="email" value={email} onChange={e => setEmail(e.target.value)} maxLength="254" required /></label>
-        <button className="primary" disabled={busy}>{busy ? 'Please wait...' : 'Reset Link पठाउनुहोस्'}</button>
+        <button className="primary" disabled={busy}>{busy ? 'Please wait...' : mode==='reset-request'?'Reset Link पठाउनुहोस्':'Verification Link पठाउनुहोस्'}</button>
       </form> : <form onSubmit={authenticate}>
         {mode === 'register' && <label>पूरा नाम<input value={name} onChange={e => setName(e.target.value)} minLength="2" maxLength="80" required /></label>}
         <label>Email<input type="email" value={email} onChange={e => setEmail(e.target.value)} maxLength="254" required autoComplete="username" /></label>
@@ -249,11 +264,13 @@ export default function CustomerPortal({ onClose }) {
         {mode === 'register' && <small>Password मा lowercase, uppercase र number हुनुपर्छ।</small>}
         <button className="primary" disabled={busy}>{busy ? 'Please wait...' : mode === 'login' ? 'Login' : 'Create Account'}</button>
       </form>}
-      {mode === 'login' && <button type="button" className="text-button" onClick={() => { setMode('reset-request'); setError(''); }}>Password बिर्सनुभयो?</button>}
-      {mode !== 'reset-confirm' && <button type="button" className="text-button" onClick={() => { setMode(mode === 'register' ? 'login' : 'register'); setError(''); }}>
-        {mode === 'register' ? 'पहिले account छ? Login गर्नुहोस्' : 'नयाँ account बनाउने'}
-      </button>}
-      {mode === 'reset-request' && <button type="button" className="text-button" onClick={() => setMode('login')}>Login मा फर्कनुहोस्</button>}
+      {mode === 'login' && <>
+        <button type="button" className="text-button" onClick={() => { setMode('reset-request'); setError(''); }}>Password बिर्सनुभयो?</button>
+        <button type="button" className="text-button" onClick={() => { setMode('verify-request'); setError(''); }}>Email verify गर्न link पठाउनुहोस्</button>
+      </>}
+      {mode === 'register' && <button type="button" className="text-button" onClick={() => { setMode('login'); setError(''); }}>पहिले account छ? Login गर्नुहोस्</button>}
+      {['reset-request','verify-request','verify-confirm','reset-confirm'].includes(mode) && <button type="button" className="text-button" onClick={() => {setMode('login');setError('');}}>Login मा फर्कनुहोस्</button>}
+      {mode === 'login' && <button type="button" className="text-button" onClick={() => { setMode('register'); setError(''); }}>नयाँ account बनाउने</button>}
     </div> : user.role !== 'customer' ? <div className="customer-auth">
       <p>यो portal customer account का लागि हो। हालको account role: {user.role}</p>
       <button onClick={logout}>Logout</button>

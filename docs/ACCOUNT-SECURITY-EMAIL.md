@@ -1,6 +1,6 @@
 # Account email verification and recovery
 
-The API supports one-time email verification and password-reset links.
+The API supports one-time email verification and password-reset links. Customer email enforcement is controlled by `REQUIRE_VERIFIED_EMAIL` and remains opt-in until email delivery is configured and tested.
 
 ## Required environment
 
@@ -26,3 +26,17 @@ The Customer Portal now provides a password-reset request form, reset-token conf
 ## Operational checks
 
 Send test messages only after the sender domain is verified. Check delivery, bounce and complaint handling in the provider dashboard. Apply provider-side sending limits and monitor abuse. This integration does not itself establish legal compliance or prove control of an email address until the user completes the verification link.
+
+
+## Enforcing verified customer email
+
+Set `REQUIRE_VERIFIED_EMAIL=true` only after Resend sender verification and the HTTPS `PUBLIC_APP_URL` are confirmed.
+
+When enabled:
+- New customer registration does not issue an authenticated session. The portal automatically requests a verification email and shows the verification-request screen.
+- Customer login is blocked until `email_verified_at` is set by completing the one-time link.
+- Existing customer sessions without verified email are also blocked by the authentication middleware.
+- The login screen offers a verification-link request form, so unverified customers can recover access without an active session.
+- This flag applies to customer accounts only; it does not change Super Admin, seller, or pharmacist authentication.
+
+Before enabling it in production, test registration, delivery, link confirmation, logout/login, and an existing unverified account. If email delivery is unavailable, keep the flag false; otherwise new customers cannot sign in.

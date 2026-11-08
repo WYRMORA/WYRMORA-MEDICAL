@@ -22,5 +22,6 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   enableTestOrderWorkflow: process.env.ENABLE_TEST_ORDER_WORKFLOW === 'true',
   // Commercial marketplace checkout is opt-in only after legal, pharmacy and payment approvals.
-  enableMarketplaceOrders: process.env.ENABLE_MARKETPLACE_ORDERS === 'true'
+  enableMarketplaceOrders: process.env.ENABLE_MARKETPLACE_ORDERS === 'true',
+  requireVerifiedEmail: process.env.REQUIRE_VERIFIED_EMAIL === 'true'
 };
