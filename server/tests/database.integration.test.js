@@ -1,4 +1,5 @@
 import test, { after } from 'node:test';
+import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
@@ -25,7 +26,7 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
   assert.ok(medicines.body.items.every(item => item.priceVerified === false));
 
   const app = createApp();
-  const email = `integration-${crypto.randomUUID()}@example.test`;
+  const email = `integration-${randomUUID()}@example.test`;
   const password = 'StrongPass123!';
   let userId;
 
