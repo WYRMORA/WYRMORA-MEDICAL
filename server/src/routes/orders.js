@@ -16,6 +16,10 @@ router.post('/', (req,res,next) => config.enableMarketplaceOrders ? next() : res
     client = await pool.connect();
     await client.query('BEGIN');
     transactionOpen = true;
+    const cartCount = await client.query(
+      'SELECT COUNT(*)::int AS count FROM cart_items WHERE user_id=$1',
+      [req.user.id]
+    );
     const cart = await client.query(
       `SELECT ci.product_id,ci.quantity,p.name,p.price,p.stock,p.seller_id,p.is_test
        FROM cart_items ci JOIN products p ON p.id=ci.product_id
@@ -26,6 +30,10 @@ router.post('/', (req,res,next) => config.enableMarketplaceOrders ? next() : res
        ORDER BY p.id FOR UPDATE OF p`,
       [req.user.id, config.enableTestOrderWorkflow]
     );
+    if (cart.rowCount && cart.rowCount !== cartCount.rows[0].count) {
+      await client.query('ROLLBACK'); transactionOpen = false;
+      return res.status(409).json({ error: 'Your cart contains unavailable products. Review your cart and remove unavailable items before checkout.' });
+    }
     if (!cart.rowCount) {
       await client.query('ROLLBACK'); transactionOpen = false;
       return res.status(400).json({ error: 'Your cart has no eligible products. Remove unavailable items and try again.' });
