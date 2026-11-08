@@ -48,7 +48,7 @@ Medicine create/update endpoints use the authenticated Super Admin/Editor sessio
 ## Operations and remaining launch requirements
 
 - Keep secrets only in Render's environment settings and rotate them if exposed.
-- Configure encrypted database backups and perform a restore test before storing business-critical data.
+- Configure [scheduled off-site backups](./docs/AUTOMATED-BACKUPS.md), enforce bucket encryption/retention, and perform a restore test before storing business-critical data.
 - Publish privacy policy, terms, consent and retention notices before collecting personal information beyond the minimum account data.
 - Complete security review, monitoring and incident-response procedures.
 - Obtain qualified pharmacist review for medicine content and verify pharmacist credentials against the relevant official issuing authority. The app does not automate Nepal Pharmacy Council registry checks.
