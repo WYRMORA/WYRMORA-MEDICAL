@@ -94,17 +94,6 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
     assert.equal(sellerProfile.status,201);
     const sellerRow=await pool.query('SELECT id FROM sellers WHERE user_id=$1',[userId]);
     const sellerId=sellerRow.rows[0].id;
-    const listing = await request(app)
-      .post('/api/seller/products')
-      .set('Cookie',cookie)
-      .set('Origin',config.clientOrigins[0])
-      .send({name:'Integration Test Product',description:'A sufficiently detailed product description for integration testing.',categoryId,price:125,stock:8});
-    assert.equal(listing.status,201);
-    assert.equal(listing.body.product.status,'pending');
-    sellerProductId = listing.body.product.id;
-    const sellerProducts = await request(app).get('/api/seller/products').set('Cookie',cookie);
-    assert.equal(sellerProducts.status,200);
-    assert.equal(sellerProducts.body.products.length,1);
 
 
     const adminEmail = `integration-admin-${randomUUID()}@example.test`;
@@ -138,6 +127,17 @@ test('PostgreSQL migrations and customer account workflow work end to end', asyn
       .send({status:'verified',checkedAgainst:'Official issuing authority register',notes:'Business identity and license checked.'});
     assert.equal(sellerApproval.status,200);
     assert.equal(sellerApproval.body.seller.verification_status,'verified');
+    const listing = await request(app)
+      .post('/api/seller/products')
+      .set('Cookie',cookie)
+      .set('Origin',config.clientOrigins[0])
+      .send({name:'Integration Test Product',description:'A sufficiently detailed product description for integration testing.',categoryId,price:125,stock:8});
+    assert.equal(listing.status,201);
+    assert.equal(listing.body.product.status,'pending');
+    sellerProductId = listing.body.product.id;
+    const sellerProducts = await request(app).get('/api/seller/products').set('Cookie',cookie);
+    assert.equal(sellerProducts.status,200);
+    assert.equal(sellerProducts.body.products.length,1);
     const sellerAudit=await pool.query(
       `SELECT metadata FROM audit_logs WHERE actor_id=$1 AND action='seller_verification_updated' AND entity_id=$2 ORDER BY created_at DESC LIMIT 1`,
       [adminId,String(sellerId)]
