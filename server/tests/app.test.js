@@ -342,7 +342,7 @@ test('checkout detects unavailable cart rows before creating an order', async ()
   pool.connect = async () => ({
     query: async sql => {
       calls.push(sql);
-      if (sql.includes('COUNT(*)::int AS count FROM cart_items')) return { rows: [{ count: 2 }], rowCount: 1 };
+      if (sql.includes('FROM cart_items WHERE user_id=$1') && sql.includes('FOR UPDATE')) return { rows: [{ product_id: 7 }, { product_id: 8 }], rowCount: 2 };
       if (sql.includes('FROM cart_items ci JOIN products')) return { rows: [{ product_id: 7, quantity: 1, name: 'Available', price: '100.00', stock: 5, seller_id: 9, is_test: false }], rowCount: 1 };
       return { rows: [], rowCount: 0 };
     },
