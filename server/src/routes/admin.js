@@ -173,6 +173,15 @@ router.patch('/sellers/:id/verification', async (req,res,next) => {
   try {
     const status=String(req.body?.status||'');
     if(!['pending','verified','rejected'].includes(status)) return res.status(400).json({error:'Invalid seller verification status.'});
+    if(status==='verified'){
+      const credential=await pool.query(
+        `SELECT a.id FROM sellers s
+         JOIN private_assets a ON a.id=s.credential_asset_id AND a.status='uploaded' AND a.purpose='seller_credential'
+         WHERE s.id=$1`,
+        [req.params.id]
+      );
+      if(!credential.rowCount)return res.status(409).json({error:'Verified private business/pharmacy credential upload is required before seller approval.'});
+    }
     const result=await pool.query(
       'UPDATE sellers SET verification_status=$1 WHERE id=$2 RETURNING id,user_id,business_name,verification_status',
       [status,req.params.id]
