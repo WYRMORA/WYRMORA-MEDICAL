@@ -21,3 +21,8 @@ The verifier creates a uniquely named temporary database on the same PostgreSQL 
 ## Recovery objectives
 
 Set and document RPO/RTO with the operator. Keep encrypted off-site copies and test restore on a schedule. A successful archive creation is not proof of recoverability; record restore-verification output and periodically test application-level consistency after restore.
+
+
+## Scheduled off-site backups
+
+See [automated backup activation](./AUTOMATED-BACKUPS.md). The GitHub Actions workflow skips until all required repository secrets are configured; do not assume backups are active until a scheduled run and restore test succeed.
