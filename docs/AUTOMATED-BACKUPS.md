@@ -12,7 +12,7 @@ Configure these under GitHub → Settings → Secrets and variables → Actions 
 - `BACKUP_S3_ACCESS_KEY_ID`: restricted key that can only write/list the backup prefix as required.
 - `BACKUP_S3_SECRET_ACCESS_KEY`: corresponding secret.
 
-Until all five secrets exist, the scheduled workflow deliberately skips the backup and reports a GitHub Actions notice. This means backups are NOT active merely because this workflow is merged.
+All five secrets are required. If any are missing, the workflow now fails visibly instead of reporting a successful run with skipped backup steps. A green workflow run is not proof of an active backup unless the backup, isolated restore, upload and remote-object verification steps all completed.
 
 ## Bucket safeguards required before activation
 
@@ -22,12 +22,12 @@ Until all five secrets exist, the scheduled workflow deliberately skips the back
 4. Use a dedicated least-privilege key and rotate it.
 5. Keep the backup bucket separate from application uploads where possible.
 
-The workflow creates a PostgreSQL custom-format dump, checks that it is non-empty, prints its SHA-256 checksum, restores it into an isolated PostgreSQL 16 service container with `pg_restore --exit-on-error`, uploads it to `database-backups/` only after restore succeeds, and deletes its temporary local copy. It does not print the database URL or access keys.
+The workflow creates a PostgreSQL custom-format dump, checks that it is non-empty, calculates its SHA-256 checksum, restores it into an isolated PostgreSQL 16 service container with `pg_restore --exit-on-error`, uploads it to `database-backups/` only after restore succeeds, and verifies the remote object's recorded checksum metadata with an S3 `head-object` request. It does not print the database URL or access keys.
 
 ## Verification
 
-- Open Actions → WYRMORA database backup and confirm a completed run.
-- Confirm the object exists in the private bucket and record its SHA-256 checksum.
+- Open Actions → WYRMORA database backup and confirm a completed run with every step successful.
+- Confirm the object exists in the private bucket and compare its recorded SHA-256 metadata with the workflow log.
 - Download a copy to a protected environment and run:
   `npm run backup:verify --prefix server -- <backup-file>`
 - Perform a periodic application-level restore test on an isolated database. A successful upload alone is not proof of recoverability.
