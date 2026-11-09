@@ -32,7 +32,6 @@ jobs:
           --health-retries 5
     steps:
       - name: Check backup configuration
-        id: config
         env:
           DATABASE_URL: ${{ secrets.WYRMORA_DATABASE_URL }}
           BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
@@ -41,21 +40,24 @@ jobs:
           BACKUP_S3_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
         shell: bash
         run: |
-          if [[ -z "$DATABASE_URL" || -z "$BACKUP_S3_BUCKET" || -z "$BACKUP_S3_ENDPOINT" || -z "$BACKUP_S3_ACCESS_KEY_ID" || -z "$BACKUP_S3_SECRET_ACCESS_KEY" ]]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Automated backups are not active. Configure the five WYRMORA backup repository secrets."
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          missing=()
+          [[ -n "$DATABASE_URL" ]] || missing+=("WYRMORA_DATABASE_URL")
+          [[ -n "$BACKUP_S3_BUCKET" ]] || missing+=("BACKUP_S3_BUCKET")
+          [[ -n "$BACKUP_S3_ENDPOINT" ]] || missing+=("BACKUP_S3_ENDPOINT")
+          [[ -n "$BACKUP_S3_ACCESS_KEY_ID" ]] || missing+=("BACKUP_S3_ACCESS_KEY_ID")
+          [[ -n "$BACKUP_S3_SECRET_ACCESS_KEY" ]] || missing+=("BACKUP_S3_SECRET_ACCESS_KEY")
+          if (( ${#missing[@]} > 0 )); then
+            printf '::error::Database backups are NOT active. Missing repository secrets: %s\n' "${missing[*]}"
+            exit 1
           fi
 
       - name: Install PostgreSQL and S3 tools
-        if: steps.config.outputs.ready == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client awscli
 
-      - name: Create and upload database backup
-        if: steps.config.outputs.ready == 'true'
+      - name: Create, restore-verify, upload and verify database backup
         env:
           DATABASE_URL: ${{ secrets.WYRMORA_DATABASE_URL }}
           BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
@@ -71,8 +73,15 @@ jobs:
           trap 'rm -f "$backup_file"' EXIT
           pg_dump "$DATABASE_URL" --format=custom --no-owner --no-acl --file="$backup_file"
           test -s "$backup_file"
-          sha256sum "$backup_file"
+          checksum="$(sha256sum "$backup_file" | awk '{print $1}')"
+          echo "Backup SHA-256: $checksum"
           PGPASSWORD=postgres pg_restore --host=127.0.0.1 --port=5432 --username=postgres --dbname=wyrmora_restore_test --no-owner --no-acl --exit-on-error "$backup_file"
           backup_name="wyrmora-db-$(date -u +%Y%m%dT%H%M%SZ).dump"
-          aws s3 cp "$backup_file" "s3://$BACKUP_S3_BUCKET/database-backups/$backup_name" --endpoint-url "$BACKUP_S3_ENDPOINT" --only-show-errors
-          echo "Backup uploaded: database-backups/$backup_name"
+          backup_key="database-backups/$backup_name"
+          aws s3 cp "$backup_file" "s3://$BACKUP_S3_BUCKET/$backup_key" --endpoint-url "$BACKUP_S3_ENDPOINT" --metadata "sha256=$checksum" --only-show-errors
+          uploaded_checksum="$(aws s3api head-object --bucket "$BACKUP_S3_BUCKET" --key "$backup_key" --endpoint-url "$BACKUP_S3_ENDPOINT" --query 'Metadata.sha256' --output text)"
+          if [[ "$uploaded_checksum" != "$checksum" ]]; then
+            echo "::error::Uploaded backup metadata checksum does not match the locally verified dump."
+            exit 1
+          fi
+          echo "Backup restored successfully and upload verified: $backup_key"
