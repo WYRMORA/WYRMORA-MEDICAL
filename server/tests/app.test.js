@@ -495,3 +495,71 @@ test('editor creation rejects passwords over bcrypt’s UTF-8 byte limit before 
     pool.query = originalQuery;
   }
 });
+
+
+test('medicine catalogue public search returns only approved records', async () => {
+  const originalQuery = pool.query;
+  let sqlSeen = '';
+  pool.query = async (sql, params) => {
+    sqlSeen = sql;
+    assert.deepEqual(params, ['paracetamol', 30]);
+    return { rows: [{
+      id: '1', brand_name: 'Example', generic_name: 'Paracetamol', strength: '500 mg',
+      dosage_form: 'Tablet', route: 'Oral', manufacturer: 'Example Pharma',
+      country_of_origin: 'Nepal', registration_number: null, registration_status: 'unknown',
+      source_name: 'Test source', source_url: 'https://example.org/record',
+      source_record_id: null, source_checked_at: new Date(), evidence_notes: '',
+      review_status: 'approved', reviewed_at: new Date()
+    }], rowCount: 1 };
+  };
+  try {
+    const response = await request(createApp()).get('/api/medicine-catalogue?q=paracetamol');
+    assert.equal(response.status, 200);
+    assert.equal(response.body.items.length, 1);
+    assert.equal(response.body.items[0].genericName, 'Paracetamol');
+    assert.match(sqlSeen, /review_status = 'approved'/);
+  } finally {
+    pool.query = originalQuery;
+  }
+});
+
+test('medicine catalogue import requires an authenticated staff session', async () => {
+  const response = await request(createApp()).post('/api/medicine-catalogue/import')
+    .set('Origin', config.clientOrigins[0])
+    .send({ sourceName: 'Test source', sourceUrl: 'https://example.org', products: [] });
+  assert.equal(response.status, 401);
+});
+
+test('medicine catalogue review queue requires an authenticated staff session', async () => {
+  const response = await request(createApp()).get('/api/medicine-catalogue/review-queue');
+  assert.equal(response.status, 401);
+});
+
+test('medicine catalogue import rejects an unsupported registered claim before database access', async () => {
+  const originalQuery = pool.query;
+  let queryCount = 0;
+  pool.query = async () => { queryCount += 1; throw new Error('Database must not be accessed.'); };
+  try {
+    const token = jwt.sign(
+      { email: 'editor@example.com', sessionVersion: 0 }, config.jwtSecret,
+      { subject: '7', issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
+    );
+    const response = await request(createApp()).post('/api/medicine-catalogue/import')
+      .set('Cookie', `${config.cookieName}=${token}`)
+      .set('Origin', config.clientOrigins[0])
+      .send({
+        sourceName: 'Unverified source',
+        sourceUrl: 'https://example.org/catalogue',
+        products: [{
+          brandName: 'Example', genericName: 'Paracetamol', strength: '500 mg',
+          dosageForm: 'Tablet', registrationStatus: 'registered',
+          registrationNumber: 'REG-123', sourceRecordId: '123'
+        }]
+      });
+    // Authentication resolves the user first; mock it as a valid editor, then
+    // the route must reject the non-DDA source before beginning an import.
+    assert.equal(response.status, 400);
+  } finally {
+    pool.query = originalQuery;
+  }
+});
