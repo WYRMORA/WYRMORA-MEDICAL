@@ -538,7 +538,13 @@ test('medicine catalogue review queue requires an authenticated staff session', 
 test('medicine catalogue import rejects an unsupported registered claim before database access', async () => {
   const originalQuery = pool.query;
   let queryCount = 0;
-  pool.query = async () => { queryCount += 1; throw new Error('Database must not be accessed.'); };
+  pool.query = async sql => {
+    if (sql.includes('FROM users WHERE id=$1')) {
+      return { rows: [{ id: '7', name: 'Test Editor', email: 'editor@example.com', role: 'editor', is_active: true, session_version: 0 }], rowCount: 1 };
+    }
+    queryCount += 1;
+    throw new Error('Import database work must not begin for an unsupported DDA claim.');
+  };
   try {
     const token = jwt.sign(
       { email: 'editor@example.com', sessionVersion: 0 }, config.jwtSecret,
@@ -559,6 +565,7 @@ test('medicine catalogue import rejects an unsupported registered claim before d
     // Authentication resolves the user first; mock it as a valid editor, then
     // the route must reject the non-DDA source before beginning an import.
     assert.equal(response.status, 400);
+    assert.equal(queryCount, 0);
   } finally {
     pool.query = originalQuery;
   }
