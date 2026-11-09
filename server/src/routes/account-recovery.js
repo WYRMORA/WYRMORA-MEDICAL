@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import { pool } from '../db.js';
 import { createOpaqueToken, hashToken, sendAccountEmail, buildAccountLink, isEmailDeliveryConfigured } from '../lib/email.js';
+import { isBcryptPasswordLengthValid } from '../lib/validation.js';
 
 const router = Router();
 const limiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: 'draft-7', legacyHeaders: false });
@@ -100,7 +101,7 @@ router.post('/password-reset/request', limiter, async (req, res, next) => {
 router.post('/password-reset/confirm', limiter, async (req, res, next) => {
   const token = String(req.body?.token || '');
   const password = String(req.body?.password || '');
-  if (token.length < 32 || token.length > 128 || password.length < 10 || password.length > 72 ||
+  if (token.length < 32 || token.length > 128 || password.length < 10 || password.length > 72 || !isBcryptPasswordLengthValid(password) ||
       !/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
     return res.status(400).json({ error: 'The reset link or new password is invalid.' });
   }

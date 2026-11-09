@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { timingSafeEqual } from 'node:crypto';
 import { pool } from '../db.js';
 import { config } from '../config.js';
-import { registerSchema } from '../lib/validation.js';
+import { registerSchema, isBcryptPasswordLengthValid } from '../lib/validation.js';
 import { requireAuth, cookieOptions } from '../middleware/auth.js';
 const router = Router();
 function setSession(res,user) {
@@ -21,7 +21,7 @@ router.post('/register',async(req,res,next)=>{try{
 }catch(err){if(err.code==='23505')return res.status(409).json({error:'An account with this email already exists.'});next(err);}});
 router.post('/login',async(req,res,next)=>{try{
  const email=String(req.body?.email||'').trim().toLowerCase(),password=String(req.body?.password||'');
- if(!email||!password||email.length>254||password.length>72)return res.status(400).json({error:'Email and password are required.'});
+ if(!email||!password||email.length>254||!isBcryptPasswordLengthValid(password))return res.status(400).json({error:'Email and password are required.'});
  const result=await pool.query('SELECT id,name,email,role,password_hash,session_version,email_verified_at FROM users WHERE email=$1 AND is_active=true',[email]),user=result.rows[0];
  if(!user||!(await bcrypt.compare(password,user.password_hash)))return res.status(401).json({error:'Email or password is incorrect.'});
  if(config.requireVerifiedEmail&&user.role==='customer'&&!user.email_verified_at)return res.status(403).json({error:'Email verification is required before login. Request a verification link below.'});
@@ -32,7 +32,7 @@ router.post('/bootstrap-super-admin',async(req,res,next)=>{
  if(!expected.length||supplied.length!==expected.length||!timingSafeEqual(supplied,expected))return res.status(403).json({error:'Bootstrap is not available.'});
  try{
   const {name,email,password}=req.body||{},cleanName=String(name||'').trim(),cleanEmail=String(email||'').trim().toLowerCase();
-  if(cleanName.length<2||cleanName.length>80||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)||String(password||'').length<12||String(password).length>72)return res.status(400).json({error:'Provide a name, valid email, and password of 12–72 characters.'});
+  if(cleanName.length<2||cleanName.length>80||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)||typeof password!=='string'||password.length<12||password.length>72||!isBcryptPasswordLengthValid(password))return res.status(400).json({error:'Provide a name, valid email, and password of 12–72 characters.'});
   const hash=await bcrypt.hash(password,12),client=await pool.connect();
   try{
    await client.query('BEGIN');await client.query('LOCK TABLE users IN EXCLUSIVE MODE');

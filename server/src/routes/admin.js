@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { pool } from '../db.js';
 import { requireAuth, allowRoles } from '../middleware/auth.js';
 import { config } from '../config.js';
-import { emailSchema } from '../lib/validation.js';
+import { emailSchema, isBcryptPasswordLengthValid } from '../lib/validation.js';
 
 const router = Router();
 // Only Super Admin may access platform-wide administration endpoints.
@@ -46,7 +46,7 @@ router.post('/editors', async (req,res,next) => {
     const name=String(req.body?.name||'').trim();
     const email=String(req.body?.email||'').trim().toLowerCase();
     const password=String(req.body?.password||'');
-    if(name.length<2||name.length>80||!emailSchema.safeParse(email).success||password.length<12||password.length>72)
+    if(name.length<2||name.length>80||!emailSchema.safeParse(email).success||password.length<12||password.length>72||!isBcryptPasswordLengthValid(password))
       return res.status(400).json({error:'नाम, valid email र 12–72 characters को password आवश्यक छ।'});
     const passwordHash=await bcrypt.hash(password,12);
     const result=await pool.query(
