@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import { pool } from '../src/db.js';
 import { config } from '../src/config.js';
 import { createApp } from '../src/app.js';
-import { emailSchema } from '../src/lib/validation.js';
+import { emailSchema, passwordSchema } from '../src/lib/validation.js';
 import { applicationSchema, createApplicationLimit, reviewSchema } from '../src/routes/pharmacist.js';
 import { createSupportLimit } from '../src/routes/support.js';
 
@@ -397,4 +397,101 @@ test('customer cart returns unavailable rows so they can be removed before check
     assert.equal(response.body.items.length, 1);
     assert.equal(response.body.items[0].available, false);
   } finally { pool.query = originalQuery; }
+});
+
+
+const overlongUtf8Password = `Aa1${'é'.repeat(35)}`;
+
+test('bcrypt password policy rejects UTF-8 passwords longer than 72 bytes', () => {
+  assert.equal(Buffer.byteLength(overlongUtf8Password, 'utf8'), 73);
+  assert.equal(passwordSchema.safeParse(overlongUtf8Password).success, false);
+});
+
+test('login rejects passwords over bcrypt’s UTF-8 byte limit before database access', async () => {
+  const originalQuery = pool.query;
+  let queryCount = 0;
+  pool.query = async () => {
+    queryCount += 1;
+    throw new Error('Database must not be queried for an invalid password.');
+  };
+  try {
+    const response = await request(createApp()).post('/api/auth/login')
+      .set('Origin', config.clientOrigins[0])
+      .send({ email: 'user@example.com', password: overlongUtf8Password });
+    assert.equal(response.status, 400);
+    assert.equal(queryCount, 0);
+  } finally {
+    pool.query = originalQuery;
+  }
+});
+
+test('Super Admin bootstrap rejects passwords over bcrypt’s UTF-8 byte limit before database access', async () => {
+  const originalToken = process.env.ADMIN_BOOTSTRAP_TOKEN;
+  const originalConnect = pool.connect;
+  process.env.ADMIN_BOOTSTRAP_TOKEN = 'configured-bootstrap-token-for-test';
+  let connectCount = 0;
+  pool.connect = async () => {
+    connectCount += 1;
+    throw new Error('Database must not be accessed for an invalid password.');
+  };
+  try {
+    const response = await request(createApp()).post('/api/auth/bootstrap-super-admin')
+      .set('Origin', config.clientOrigins[0])
+      .set('x-bootstrap-token', 'configured-bootstrap-token-for-test')
+      .send({ name: 'Test Admin', email: 'admin@example.com', password: overlongUtf8Password });
+    assert.equal(response.status, 400);
+    assert.equal(connectCount, 0);
+  } finally {
+    pool.connect = originalConnect;
+    if (originalToken === undefined) delete process.env.ADMIN_BOOTSTRAP_TOKEN;
+    else process.env.ADMIN_BOOTSTRAP_TOKEN = originalToken;
+  }
+});
+
+test('password reset rejects passwords over bcrypt’s UTF-8 byte limit before database access', async () => {
+  const originalConnect = pool.connect;
+  let connectCount = 0;
+  pool.connect = async () => {
+    connectCount += 1;
+    throw new Error('Database must not be accessed for an invalid password.');
+  };
+  try {
+    const response = await request(createApp()).post('/api/account/password-reset/confirm')
+      .set('Origin', config.clientOrigins[0])
+      .send({ token: 'a'.repeat(64), password: overlongUtf8Password });
+    assert.equal(response.status, 400);
+    assert.equal(connectCount, 0);
+  } finally {
+    pool.connect = originalConnect;
+  }
+});
+
+test('editor creation rejects passwords over bcrypt’s UTF-8 byte limit before database writes', async () => {
+  const originalQuery = pool.query;
+  let writeCount = 0;
+  pool.query = async sql => {
+    if (sql.includes('FROM users WHERE id=$1')) {
+      return {
+        rows: [{ id: '7', name: 'Super Admin', email: 'admin@example.com', role: 'super_admin', is_active: true, session_version: 0 }],
+        rowCount: 1
+      };
+    }
+    writeCount += 1;
+    throw new Error('Database write must not occur for an invalid password.');
+  };
+  try {
+    const token = jwt.sign(
+      { email: 'admin@example.com', sessionVersion: 0 },
+      config.jwtSecret,
+      { subject: '7', issuer: 'wyrmora-api', audience: 'wyrmora-client', expiresIn: '8h' }
+    );
+    const response = await request(createApp()).post('/api/admin/editors')
+      .set('Cookie', `${config.cookieName}=${token}`)
+      .set('Origin', config.clientOrigins[0])
+      .send({ name: 'New Editor', email: 'editor@example.com', password: overlongUtf8Password });
+    assert.equal(response.status, 400);
+    assert.equal(writeCount, 0);
+  } finally {
+    pool.query = originalQuery;
+  }
 });
