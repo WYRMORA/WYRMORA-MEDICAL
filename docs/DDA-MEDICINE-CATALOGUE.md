@@ -9,7 +9,7 @@ Build a Nepal-focused catalogue of 10,000+ **distinct branded product presentati
 1. DDA DAMS public Registered Drug Information is the primary source for Nepal registration claims:
    - Brand lookup: https://dams.dda.gov.np/manLogin/publicInfo1
    - API/generic lookup: https://dams.dda.gov.np/manLogin/publicInfo
-2. The DDA public brand lookup currently displays an "Under Construction" notice. The API lookup exposes ingredient choices but its full result set was not retrievable during initial research. Therefore no bulk DDA product export has yet been verified.
+2. The DDA public brand lookup was reported as showing an "Under Construction" notice during initial research. The API lookup exposes ingredient choices, but a complete result set has not yet been verified as retrievable. Therefore no bulk DDA product export is currently verified.
 3. DDA's National List of Essential Medicines (NLEM), sixth revision (2021), is a source for essential generic medicines, **not** proof that a particular brand/product is registered:
    https://dda.gov.np/download/National%20List%20of%20Essential%20Medicines%20Nepal%2C%20Sixth%20revision%20%282021%29_21%20Dec.pdf
 4. DDA medicine-registration guidance explains product licensing and evidence. It is not a live list of currently registered products:
@@ -46,7 +46,7 @@ A different strength, dosage form, release type, manufacturer or combination is 
 
 ## Initial source assessment (2026-11-08)
 
-- DDA Registered Drug Information brand page: reachable in search indexing, but currently shows "Under Construction"; it is not yet a dependable bulk export.
+- DDA Registered Drug Information brand page: initial research found an "Under Construction" notice; its current bulk-export availability still needs rechecking.
 - DDA API/generic page: exposes a list of API choices; a complete official product-result export still needs access/technical verification.
 - DDA NLEM sixth revision (2021): official PDF available; useful as a generic/essential-medicine baseline only.
 - Consequently, a verified 10,000+ product count cannot honestly be claimed yet. The catalogue should grow only as traceable records are acquired and checked.
@@ -55,21 +55,20 @@ A different strength, dosage form, release type, manufacturer or combination is 
 
 Use `data/medicine-catalogue/dda-products-template.csv`. Leave unknown fields blank; never fill blanks by guessing. The template is not itself a verified catalogue.
 
-## Database
+## Database and implementation status
 
-Migration `017_medicine_catalogue_products.sql` creates a normalized product-presentation table separate from the existing educational `medicines` table, plus import-batch provenance. Product records are pending by default. The API/UI import and review workflow must be implemented before bulk production import.
+Migration `017_medicine_catalogue_products.sql` creates a normalized product-presentation table separate from the existing educational `medicines` table, plus import-batch provenance. Product records are pending by default. Migration 017 is included in the repository migration runner; its application to the production database must be verified from the production deployment/migration logs before importing production data.
 
+The Super Admin browser console now includes a **Medicine Catalogue** tab. It supports JSON batch import (maximum 200 rows) and a pending-review queue. The backend exposes `/api/medicine-catalogue` endpoints for approved public search, staff review queue, transactional import and Super Admin approval.
 
-## Implemented API workflow
-
-The backend now exposes a separate product-presentation catalogue API under `/api/medicine-catalogue`:
+## API workflow
 
 - `GET /api/medicine-catalogue?q=<term>&limit=30` returns only records whose catalogue review status is `approved`.
 - `GET /api/medicine-catalogue/review-queue?status=pending` requires a Super Admin or Editor session.
 - `POST /api/medicine-catalogue/import` requires a Super Admin or Editor session and accepts at most 200 product presentations per batch. Each row must include brand, generic ingredient, strength and dosage form, and the batch must include a source name and URL.
 - `PATCH /api/medicine-catalogue/:id/review` requires a Super Admin session. Approval is blocked unless the record has a DDA-hosted source URL, a registration number, a source record ID and `registration_status=registered`.
 
-Imports are transactional, duplicate product identities are skipped, and every batch/review action is audited. Non-DDA sources cannot assert a DDA registration status. Imported rows remain pending until reviewed. This workflow verifies traceability and catalogue data only; it does not replace pharmacist clinical review, official DDA confirmation or legal approval.
+Imports are transactional, duplicate product identities are skipped, and every batch/review action is audited. Non-DDA sources cannot assert a DDA registration status. Imported rows remain pending until reviewed. This workflow verifies traceability and catalogue data only; it does not replace independent DDA confirmation, pharmacist clinical review or legal approval. The application checks that the source URL uses a DDA domain; a human reviewer must still verify that the cited DDA record actually matches the product.
 
 Example request body for a batch (use only values copied from a traceable source; do not infer missing fields):
 
@@ -90,4 +89,4 @@ Example request body for a batch (use only values copied from a traceable source
 }
 ```
 
-The API foundation does not yet include a browser-based import/review screen or a verified bulk DDA export. Those remain separate tasks.
+The Super Admin import/review screen is implemented. A verified bulk DDA export and a populated 10,000+ DDA-verified product catalogue are **not** yet available. Do not claim catalogue completeness until source access, record-level evidence and independent review are complete.
