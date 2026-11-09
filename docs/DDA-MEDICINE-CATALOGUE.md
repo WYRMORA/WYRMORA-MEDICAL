@@ -58,3 +58,36 @@ Use `data/medicine-catalogue/dda-products-template.csv`. Leave unknown fields bl
 ## Database
 
 Migration `017_medicine_catalogue_products.sql` creates a normalized product-presentation table separate from the existing educational `medicines` table, plus import-batch provenance. Product records are pending by default. The API/UI import and review workflow must be implemented before bulk production import.
+
+
+## Implemented API workflow
+
+The backend now exposes a separate product-presentation catalogue API under `/api/medicine-catalogue`:
+
+- `GET /api/medicine-catalogue?q=<term>&limit=30` returns only records whose catalogue review status is `approved`.
+- `GET /api/medicine-catalogue/review-queue?status=pending` requires a Super Admin or Editor session.
+- `POST /api/medicine-catalogue/import` requires a Super Admin or Editor session and accepts at most 200 product presentations per batch. Each row must include brand, generic ingredient, strength and dosage form, and the batch must include a source name and URL.
+- `PATCH /api/medicine-catalogue/:id/review` requires a Super Admin session. Approval is blocked unless the record has a DDA-hosted source URL, a registration number, a source record ID and `registration_status=registered`.
+
+Imports are transactional, duplicate product identities are skipped, and every batch/review action is audited. Non-DDA sources cannot assert a DDA registration status. Imported rows remain pending until reviewed. This workflow verifies traceability and catalogue data only; it does not replace pharmacist clinical review, official DDA confirmation or legal approval.
+
+Example request body for a batch (use only values copied from a traceable source; do not infer missing fields):
+
+```json
+{
+  "sourceName": "Official source name",
+  "sourceUrl": "https://dams.dda.gov.np/...",
+  "products": [
+    {
+      "brandName": "Exact brand as recorded",
+      "genericName": "Exact active ingredient",
+      "strength": "Exact strength",
+      "dosageForm": "Exact dosage form",
+      "registrationStatus": "unknown",
+      "evidenceNotes": "Evidence checked; pending independent review."
+    }
+  ]
+}
+```
+
+The API foundation does not yet include a browser-based import/review screen or a verified bulk DDA export. Those remain separate tasks.

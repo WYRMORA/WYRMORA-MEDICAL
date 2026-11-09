@@ -17,6 +17,7 @@ import adminRoutes from './routes/admin.js';
 import reviewRoutes from './routes/reviews.js';
 import supportRoutes from './routes/support.js';
 import medicineRoutes from './routes/medicines.js';
+import medicineCatalogueRoutes from './routes/medicine-catalogue.js';
 import pharmacistRoutes from './routes/pharmacist.js';
 import { originGuard, notFound, errorHandler } from './middleware/security.js';
 
@@ -49,6 +50,7 @@ export function createApp() {
   app.use('/api/uploads', authLimiter, uploadRoutes);
   app.use('/api/payments', authLimiter, paymentRoutes);
   app.use('/api/medicines', medicineRoutes);
+  app.use('/api/medicine-catalogue', medicineCatalogueRoutes);
   app.use('/api/pharmacist', pharmacistRoutes);
   app.use('/api/products', productRoutes);
   app.use('/api/cart', cartRoutes);
