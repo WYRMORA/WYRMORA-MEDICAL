@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { config } from '../config.js';
 import { createDownloadUrl } from '../lib/object-storage.js';
+import { createProductImageDownloadUrl } from '../lib/product-images.js';
 const router = Router();
 
 router.get('/categories', async (req,res,next) => {
@@ -34,14 +35,13 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:id/image', async (req,res,next) => {
   try {
-    const result=await pool.query(
-      `SELECT p.image_asset_id FROM products p
-       JOIN sellers s ON s.user_id=p.seller_id AND s.verification_status='verified'
-       WHERE p.id=$1 AND p.status='approved' AND p.is_active=true AND p.image_asset_id IS NOT NULL`,
-      [req.params.id]
-    );
-    if(!result.rowCount)return res.status(404).json({error:'Product image not found.'});
-    const url=await createDownloadUrl(result.rows[0].image_asset_id);
+    const url = await createProductImageDownloadUrl({
+      productId: req.params.id,
+      includeTestProducts: config.enableTestOrderWorkflow,
+      query: (sql, params) => pool.query(sql, params),
+      signDownloadUrl: createDownloadUrl
+    });
+    if (!url) return res.status(404).json({error:'Product image not found.'});
     return res.redirect(302,url);
   }catch(e){next(e);}
 });
